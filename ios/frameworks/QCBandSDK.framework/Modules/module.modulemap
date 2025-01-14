@@ -1,0 +1,6 @@
+framework module QCBandSDK {
+  umbrella header "QCBandSDK.h"
+
+  export *
+  module * { export * }
+}
