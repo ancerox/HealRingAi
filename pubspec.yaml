@@ -41,7 +41,8 @@ dependencies:
   numberpicker: ^2.1.2
   audioplayers: ^6.1.0
   video_player: ^2.8.1
-
+  intl: ^0.17.0
+  flutter_svg: ^2.0.10+1
 
 
 

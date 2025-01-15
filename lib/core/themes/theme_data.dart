@@ -65,4 +65,11 @@ class CustomTheme {
       stops: [0.1, 1],
     );
   }
+
+  // Surface colors
+  static const Color surfacePrimary =
+      Color(0xFF4B4B4B); // was calendarSelectedDay
+  static const Color surfaceSecondary =
+      Color(0xFF151515); // was calendarFutureDay
+  static const Color surfaceTertiary = Color(0xFF202020); // was calendarPastDay
 }
