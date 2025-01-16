@@ -72,4 +72,6 @@ class CustomTheme {
   static const Color surfaceSecondary =
       Color(0xFF151515); // was calendarFutureDay
   static const Color surfaceTertiary = Color(0xFF202020); // was calendarPastDay
+
+  static const Color textColorSecondary = Color(0xFFAEAEB2);
 }

@@ -4,7 +4,7 @@ import 'package:health_ring_ai/core/data/preferences.dart';
 import 'package:health_ring_ai/core/routing/router.dart';
 import 'package:health_ring_ai/core/services/platform/bluetooth/bluetooth_service.dart';
 import 'package:health_ring_ai/ui/bluetooth/bloc/bluetooth_connection_service_bloc.dart';
-import 'package:health_ring_ai/ui/screens/home.dart';
+import 'package:health_ring_ai/ui/screens/body_metrics_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
@@ -45,7 +45,7 @@ class MyApp extends StatelessWidget {
             colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
             useMaterial3: true,
           ),
-          home: const HomeScreen(),
+          home: const BodyMetricsScreen(),
         ),
       ),
     );
