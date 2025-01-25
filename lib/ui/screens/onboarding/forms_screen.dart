@@ -55,8 +55,7 @@ class _FormsScreenState extends State<FormsScreen>
     }
   }
 
-  void nextQuestion() {
-    // Hide keyboard
+  void nextQuestion() async {
     FocusScope.of(context).unfocus();
 
     if (currentQuestionIndex == 1) {
@@ -74,6 +73,15 @@ class _FormsScreenState extends State<FormsScreen>
         HapticFeedback.lightImpact();
       });
       _progressAnimationControllers[currentQuestionIndex].forward();
+    }
+
+    if (currentQuestionIndex == 3 && _weightController.text.isNotEmpty) {
+      context.read<PreferencesRepository>().setFirstLaunch(false);
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/home',
+        (route) => false,
+      );
     }
   }
 

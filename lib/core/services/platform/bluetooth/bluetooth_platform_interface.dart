@@ -1,3 +1,5 @@
+import 'package:health_ring_ai/core/models/combined_health_data.dart';
+
 abstract class BluetoothPlatformInterface {
   /// Check permissions
   Future<bool> checkPermissions();
@@ -27,10 +29,17 @@ abstract class BluetoothPlatformInterface {
   Future<void> disconnectDevice();
 
   /// Get connected device status
-  Stream<bool> get connectionStatus;
+  /// Returns either a bool or a Map with connection details
+  Stream<dynamic> get connectionStatus;
 
   /// Get discovered devices
   Stream<List<BluetoothDevice>> get discoveredDevices;
+
+  /// Get battery level
+  Future<int> getBatteryLevel();
+
+  /// Get health data
+  Future<CombinedHealthData> getHealthData(List<int> dayIndices);
 }
 
 class BluetoothDevice {
@@ -45,4 +54,7 @@ class BluetoothDevice {
     required this.rssi,
     this.manufacturerData = '',
   });
+
+  @override
+  String toString() => 'BluetoothDevice(id: $id, name: $name, rssi: $rssi)';
 }

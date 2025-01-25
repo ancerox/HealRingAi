@@ -3,12 +3,25 @@ import 'dart:ui'; // Required for the blur effect
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:health_ring_ai/core/themes/theme_data.dart';
-import 'package:health_ring_ai/ui/bluetooth/bloc/bluetooth_connection_service_bloc.dart';
-import 'package:health_ring_ai/ui/bluetooth/bloc/bluetooth_connection_service_event.dart';
-import 'package:health_ring_ai/ui/bluetooth/bloc/bluetooth_connection_service_state.dart';
+import 'package:health_ring_ai/ui/bluetooth/bluethooth_connection_bloc/bluetooth_connection_service_bloc.dart';
+import 'package:health_ring_ai/ui/bluetooth/bluethooth_connection_bloc/bluetooth_connection_service_event.dart';
+import 'package:health_ring_ai/ui/bluetooth/bluethooth_connection_bloc/bluetooth_connection_service_state.dart';
 
-class LandingPage extends StatelessWidget {
+class LandingPage extends StatefulWidget {
   const LandingPage({super.key});
+
+  @override
+  State<LandingPage> createState() => _LandingPageState();
+}
+
+class _LandingPageState extends State<LandingPage> {
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   WidgetsBinding.instance.addPostFrameCallback((_) {
+  //     context.read<BluetoothBloc>().add(CheckBluetoothPermissions());
+  //   });
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -76,65 +89,39 @@ class LandingPage extends StatelessWidget {
                           ),
                           onPressed: state is BluetoothLoading
                               ? null
-                              : () {
-                                  if (state is BluetoothEnabled) {
-                                    Navigator.pushNamedAndRemoveUntil(
-                                      context,
-                                      '/onboarding_2',
-                                      (route) => false,
-                                    );
-                                  } else {
-                                    context
-                                        .read<BluetoothBloc>()
-                                        .add(CheckBluetoothPermissions());
-                                  }
-                                },
-                          child: BlocListener<BluetoothBloc, BluetoothState>(
-                            listener: (context, state) {
-                              switch (state) {
-                                case BluetoothPermissionDenied():
+                              : () async {
                                   context
                                       .read<BluetoothBloc>()
-                                      .add(RequestBluetoothPermissions());
+                                      .add(CheckBluetoothPermissions());
 
-                                case BluetoothPermissionPermanentlyDenied():
-                                  _showSettingsDialog(context);
-
-                                case BluetoothDisabled():
-                                  _showEnableBluetoothDialog(context);
-
-                                case BluetoothError(:final message):
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text(message)),
-                                  );
-
-                                default:
-                                  break;
-                              }
-                            },
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: state is BluetoothLoading
-                                    ? CustomTheme.primaryDefault
-                                        .withOpacity(0.5)
-                                    : CustomTheme.primaryDefault,
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                              alignment: Alignment.center,
-                              child: state is BluetoothLoading
-                                  ? const SizedBox(
-                                      width: 24,
-                                      height: 24,
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : const Text(
-                                      'Begin',
-                                      style: CustomTheme.buttonTextStyle,
-                                    ),
+                                  if (state is BluetoothEnabled) {
+                                    Navigator.pushNamed(
+                                      context,
+                                      '/onboarding_2',
+                                    );
+                                  }
+                                },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: state is BluetoothLoading
+                                  ? CustomTheme.primaryDefault.withOpacity(0.5)
+                                  : CustomTheme.primaryDefault,
+                              borderRadius: BorderRadius.circular(30),
                             ),
+                            alignment: Alignment.center,
+                            child: state is BluetoothLoading
+                                ? const SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Text(
+                                    'Begin',
+                                    style: CustomTheme.buttonTextStyle,
+                                  ),
                           ),
                         ),
                       ),

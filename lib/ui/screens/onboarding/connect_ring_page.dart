@@ -4,14 +4,16 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:health_ring_ai/core/services/platform/bluetooth/bluetooth_platform_interface.dart';
 import 'package:health_ring_ai/core/themes/theme_data.dart';
-import 'package:health_ring_ai/ui/bluetooth/bloc/bluetooth_connection_service_bloc.dart';
-import 'package:health_ring_ai/ui/bluetooth/bloc/bluetooth_connection_service_state.dart';
+import 'package:health_ring_ai/ui/bluetooth/bluethooth_connection_bloc/bluetooth_connection_service_bloc.dart';
+import 'package:health_ring_ai/ui/bluetooth/bluethooth_connection_bloc/bluetooth_connection_service_state.dart';
 
-import '../../bluetooth/bloc/bluetooth_connection_service_event.dart';
+import '../../bluetooth/bluethooth_connection_bloc/bluetooth_connection_service_event.dart';
 
 class ConnectRingPage extends StatefulWidget {
-  const ConnectRingPage({super.key});
+  final BluetoothDevice device;
+  const ConnectRingPage({super.key, required this.device});
 
   @override
   _ConnectRingPageState createState() => _ConnectRingPageState();
@@ -23,6 +25,8 @@ class _ConnectRingPageState extends State<ConnectRingPage>
   late Animation<double> _animation;
   bool isExpanding = true;
   final AudioPlayer _audioPlayer = AudioPlayer();
+
+  late final BluetoothDevice device;
 
   @override
   void initState() {
@@ -88,13 +92,9 @@ class _ConnectRingPageState extends State<ConnectRingPage>
                     BlocBuilder<BluetoothBloc, BluetoothState>(
                       builder: (context, state) {
                         // Get the device name from the current state
-                        String deviceName = "Unknown Device";
+                        String deviceName = widget.device.name;
 
-                        if (state.devices?.isNotEmpty ?? false) {
-                          deviceName = state.devices!.first.name;
-                        } else if (state is BluetoothConnected) {
-                          deviceName = (state).device.name;
-                        }
+                        if (state.devices?.isNotEmpty ?? false) {}
 
                         return Text(
                           deviceName,
@@ -148,8 +148,10 @@ class _ConnectRingPageState extends State<ConnectRingPage>
                                 .play(AssetSource('sounds/success.mp3'));
                             Future.delayed(const Duration(milliseconds: 1000),
                                 () {
-                              Navigator.pushReplacementNamed(
-                                  context, '/information_page');
+                              if (mounted && context.mounted) {
+                                Navigator.of(context)
+                                    .pushReplacementNamed('/information_page');
+                              }
                             });
                           }
 
@@ -161,12 +163,9 @@ class _ConnectRingPageState extends State<ConnectRingPage>
                                 : () {
                                     final bluetoothBloc =
                                         context.read<BluetoothBloc>();
-                                    final device =
-                                        bluetoothBloc.state.devices?.first;
-                                    if (device != null) {
-                                      bluetoothBloc
-                                          .add(ConnectToDevice(device: device));
-                                    }
+                                    final device = widget.device;
+                                    bluetoothBloc
+                                        .add(ConnectToDevice(device: device));
                                   },
                             child: state is BluetoothLoading
                                 ? const CircularProgressIndicator(

@@ -1,4 +1,7 @@
 import 'package:flutter/services.dart';
+import 'package:health_ring_ai/core/models/blood_oxygen_data.dart';
+import 'package:health_ring_ai/core/models/combined_health_data.dart';
+import 'package:health_ring_ai/core/models/heart_rate_data.dart';
 
 import './bluetooth_platform_interface.dart';
 
@@ -114,5 +117,29 @@ class BluetoothPlatformAndroid implements BluetoothPlatformInterface {
         );
       }).toList();
     });
+  }
+
+  @override
+  Future<int> getBatteryLevel() {
+    // TODO: implement getBatteryLevel
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<List<HeartRateData>> getHeartRateData(List<int> dayIndices) {
+    // TODO: implement getHeartRateData
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<List<BloodOxygenData>> getBloodOxygenData(int dayIndex) {
+    // TODO: implement getBloodOxygenData
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<CombinedHealthData> getHealthData(List<int> dayIndices) {
+    // TODO: implement getHealthData
+    throw UnimplementedError();
   }
 }

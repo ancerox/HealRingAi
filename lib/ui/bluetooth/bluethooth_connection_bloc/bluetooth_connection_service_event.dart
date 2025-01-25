@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:health_ring_ai/core/services/platform/bluetooth/bluetooth_platform_interface.dart';
+import 'package:health_ring_ai/core/services/platform/bluetooth/bluetooth_platform_ios.dart';
 
 sealed class BluetoothEvent extends Equatable {
   const BluetoothEvent();
@@ -44,8 +45,24 @@ final class BluetoothDevicesUpdated extends BluetoothEvent {
 }
 
 final class ConnectionStatusChanged extends BluetoothEvent {
-  final dynamic status;
+  final ConnectionInfo? status;
   final String? error;
 
   const ConnectionStatusChanged({this.status, this.error});
+
+  @override
+  List<Object?> get props => [status, error];
 }
+
+final class GetBatteryLevel extends BluetoothEvent {
+  const GetBatteryLevel();
+}
+
+// final class GetHeartRateData extends BluetoothEvent {
+//   final List<int> dayIndices;
+
+//   const GetHeartRateData({required this.dayIndices});
+
+//   @override
+//   List<Object?> get props => [dayIndices];
+// }

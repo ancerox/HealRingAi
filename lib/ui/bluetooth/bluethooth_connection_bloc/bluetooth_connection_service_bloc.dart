@@ -9,7 +9,6 @@ import 'bluetooth_connection_service_state.dart';
 class BluetoothBloc extends Bloc<BluetoothEvent, BluetoothState> {
   final BluetoothService _bluetoothService;
   StreamSubscription? _deviceSubscription;
-
   StreamSubscription? _connectionSubscription;
 
   BluetoothBloc({
@@ -19,41 +18,78 @@ class BluetoothBloc extends Bloc<BluetoothEvent, BluetoothState> {
     on<CheckBluetoothPermissions>(_onCheckPermissions);
     on<RequestBluetoothPermissions>(_onRequestPermissions);
     on<OpenBluetoothSettings>(_onOpenSettings);
-
     on<CheckBluetoothStatus>(_onCheckStatus);
     on<EnableBluetooth>(_onEnableBluetooth);
     on<StartScanning>(_onStartScanning);
     on<StopScanning>(_onStopScanning);
-    on<ConnectToDevice>(_onConnectToDevice);
     on<DisconnectDevice>(_onDisconnectDevice);
     on<BluetoothDevicesUpdated>(_onDevicesUpdated);
+    on<GetBatteryLevel>(_onGetBatteryLevel);
+    on<ConnectionStatusChanged>(_onConnectionStatusChanged);
+    on<ConnectToDevice>(_onConnectToDevice);
 
-    add(CheckBluetoothPermissions());
+    // Add debug print before checking permissions
+    print('Initializing BluetoothBloc');
 
-    _setupSubscriptions();
-  }
-
-  void _setupSubscriptions() {
     _connectionSubscription = _bluetoothService.connectionStatus.listen(
-      (isConnected) {
-        if (!isConnected && state is BluetoothConnected) {
-          final connectedState = state as BluetoothConnected;
-          add(ConnectToDevice(device: connectedState.device));
-        }
+      (status) {
+        print('Dart: Received connection status:');
+        print('  - Connected: ${status.connected}');
+        print('  - State: ${status.state}');
+        print('  - Device: ${status.device}');
+        add(ConnectionStatusChanged(
+          status: status,
+          error: null,
+        ));
+      },
+      onError: (error) {
+        add(ConnectionStatusChanged(
+          status: null,
+          error: error.toString(),
+        ));
       },
     );
+
+    // if (prefs.getBool('isFirstTime') ?? true) {
+    // add(CheckBluetoothPermissions());
+    // }
+
+    // Check Bluetooth status
+    // add(CheckBluetoothPermissions());
+  }
+
+  Future<void> _onConnectToDevice(
+    ConnectToDevice event,
+    Emitter<BluetoothState> emit,
+  ) async {
+    try {
+      emit(BluetoothLoading());
+      await Future.delayed(const Duration(seconds: 2));
+      await _bluetoothService.connectToDevice(event.device.id);
+      emit(BluetoothConnected(device: event.device));
+    } catch (e) {
+      emit(BluetoothError(message: e.toString()));
+    }
   }
 
   Future<void> _onCheckPermissions(
     CheckBluetoothPermissions event,
     Emitter<BluetoothState> emit,
   ) async {
+    // Don't check permissions if we're already connected
+    if (state is BluetoothConnected) {
+      print('Already connected, skipping permission check');
+      return;
+    }
+
     try {
       emit(BluetoothLoading());
       final hasPermissions = await _bluetoothService.checkPermissions();
 
       if (hasPermissions) {
-        add(CheckBluetoothStatus());
+        // Instead of adding a new event, handle the status check directly here
+        final isEnabled = await _bluetoothService.isBluetoothEnabled();
+        emit(isEnabled ? BluetoothEnabled() : BluetoothDisabled());
       } else {
         emit(const BluetoothPermissionDenied(deniedPermissions: []));
       }
@@ -98,6 +134,12 @@ class BluetoothBloc extends Bloc<BluetoothEvent, BluetoothState> {
     CheckBluetoothStatus event,
     Emitter<BluetoothState> emit,
   ) async {
+    // Don't check status if we're already connected
+    if (state is BluetoothConnected) {
+      print('Already connected, skipping status check');
+      return;
+    }
+
     try {
       emit(BluetoothLoading());
       final isEnabled = await _bluetoothService.isBluetoothEnabled();
@@ -151,20 +193,6 @@ class BluetoothBloc extends Bloc<BluetoothEvent, BluetoothState> {
     emit(BluetoothEnabled());
   }
 
-  Future<void> _onConnectToDevice(
-    ConnectToDevice event,
-    Emitter<BluetoothState> emit,
-  ) async {
-    try {
-      emit(BluetoothLoading());
-      await Future.delayed(const Duration(seconds: 2));
-      await _bluetoothService.connectToDevice(event.device.id);
-      emit(BluetoothConnected(device: event.device));
-    } catch (e) {
-      emit(BluetoothError(message: e.toString()));
-    }
-  }
-
   Future<void> _onDisconnectDevice(
     DisconnectDevice event,
     Emitter<BluetoothState> emit,
@@ -182,7 +210,81 @@ class BluetoothBloc extends Bloc<BluetoothEvent, BluetoothState> {
     BluetoothDevicesUpdated event,
     Emitter<BluetoothState> emit,
   ) {
+    // Don't update state if we're already connected
+    if (state is BluetoothConnected) {
+      print('Ignoring device updates while connected');
+      return;
+    }
     emit(BluetoothScanning(devices: event.devices));
+  }
+
+  Future<void> _onGetBatteryLevel(
+    GetBatteryLevel event,
+    Emitter<BluetoothState> emit,
+  ) async {
+    try {
+      final batteryLevel = await _bluetoothService.getBatteryLevel();
+      print('Dart: Battery level: $batteryLevel');
+
+      final currentState = state as BluetoothConnected;
+
+      emit(BluetoothConnected(
+        device: currentState.device,
+        batteryLevel: batteryLevel,
+      ));
+    } catch (e) {
+      emit(BluetoothError(message: e.toString()));
+    }
+  }
+
+  void _onConnectionStatusChanged(
+    ConnectionStatusChanged event,
+    Emitter<BluetoothState> emit,
+  ) async {
+    print('DEBUG - Connection status changed:');
+    print('  - Current state: $state');
+    print('  - Event status: ${event.status?.connected}');
+    print('  - Event state: ${event.status?.state}');
+    print('  - Event device: ${event.status?.device}');
+
+    if (event.error != null) {
+      print('  - Error: ${event.error}');
+      emit(BluetoothError(message: event.error!));
+      return;
+    }
+
+    final status = event.status;
+    if (status == null) {
+      print('  - Status is null');
+      return;
+    }
+
+    print('  - Processing state: ${status.state}');
+    switch (status.state) {
+      case 'connected':
+        if (status.device != null) {
+          print(
+              '  - Emitting BluetoothConnected with device: ${status.device}');
+          // Stop scanning when connected
+
+          emit(BluetoothConnected(device: status.device!));
+        } else {
+          print('  - Device is null, cannot emit BluetoothConnected');
+        }
+        break;
+      case 'disconnected':
+        emit(BluetoothEnabled());
+        break;
+      case 'connecting':
+        emit(BluetoothLoading());
+        break;
+      case 'failed':
+        emit(const BluetoothError(message: 'Connection failed'));
+        break;
+      default:
+        // Maintain current state if unknown state
+        break;
+    }
   }
 
   @override
@@ -190,5 +292,13 @@ class BluetoothBloc extends Bloc<BluetoothEvent, BluetoothState> {
     await _deviceSubscription?.cancel();
     await _connectionSubscription?.cancel();
     return super.close();
+  }
+
+  @override
+  void onTransition(Transition<BluetoothEvent, BluetoothState> transition) {
+    super.onTransition(transition);
+    print('Bluetooth Transition:');
+    print(
+        '  Current Bluetooth change: ${transition.currentState} Event: ${transition.event} Next: ${transition.nextState}');
   }
 }

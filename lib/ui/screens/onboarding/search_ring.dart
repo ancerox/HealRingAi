@@ -5,9 +5,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:health_ring_ai/core/services/platform/bluetooth/bluetooth_service.dart';
 import 'package:health_ring_ai/core/themes/theme_data.dart';
-import 'package:health_ring_ai/ui/bluetooth/bloc/bluetooth_connection_service_bloc.dart';
-import 'package:health_ring_ai/ui/bluetooth/bloc/bluetooth_connection_service_event.dart';
-import 'package:health_ring_ai/ui/bluetooth/bloc/bluetooth_connection_service_state.dart';
+import 'package:health_ring_ai/ui/bluetooth/bluethooth_connection_bloc/bluetooth_connection_service_bloc.dart';
+import 'package:health_ring_ai/ui/bluetooth/bluethooth_connection_bloc/bluetooth_connection_service_event.dart';
+import 'package:health_ring_ai/ui/bluetooth/bluethooth_connection_bloc/bluetooth_connection_service_state.dart';
 
 class RingWaveAnimation extends StatefulWidget {
   const RingWaveAnimation({super.key});

@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:health_ring_ai/core/models/heart_rate_data.dart';
 import 'package:health_ring_ai/core/services/platform/bluetooth/bluetooth_platform_interface.dart';
 
 enum ConnectionStatus { disconnected, connecting, connected }
@@ -8,6 +9,8 @@ sealed class BluetoothState extends Equatable {
 
   @override
   List<Object?> get props => [];
+
+  BluetoothState copyWith() => this; // Base copyWith method
 
   ConnectionStatus get connectionStatus => switch (this) {
         BluetoothLoading() => ConnectionStatus.connecting,
@@ -64,16 +67,47 @@ final class BluetoothScanning extends BluetoothState {
   const BluetoothScanning({required this.devices});
 
   @override
-  List<Object?> get props => [devices];
+  List<Object?> get props => [
+        devices,
+        connectionStatus,
+        isLoading,
+        devices,
+      ];
 }
 
 final class BluetoothConnected extends BluetoothState {
   final BluetoothDevice device;
+  final int batteryLevel;
+  final List<HeartRateData>? heartRateData;
 
-  const BluetoothConnected({required this.device});
+  const BluetoothConnected({
+    required this.device,
+    this.batteryLevel = 0,
+    this.heartRateData,
+  });
 
   @override
-  List<Object?> get props => [device];
+  List<Object?> get props => [
+        device,
+        batteryLevel,
+        heartRateData,
+        connectionStatus,
+        isLoading,
+        devices
+      ];
+
+  @override
+  BluetoothConnected copyWith({
+    BluetoothDevice? device,
+    int? batteryLevel,
+    List<HeartRateData>? heartRateData,
+  }) {
+    return BluetoothConnected(
+      device: device ?? this.device,
+      batteryLevel: batteryLevel ?? this.batteryLevel,
+      heartRateData: heartRateData ?? this.heartRateData,
+    );
+  }
 }
 
 final class BluetoothError extends BluetoothState {

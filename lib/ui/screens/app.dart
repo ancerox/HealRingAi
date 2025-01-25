@@ -4,45 +4,63 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:health_ring_ai/core/data/preferences.dart';
 import 'package:health_ring_ai/core/themes/theme_data.dart';
-import 'package:health_ring_ai/ui/bluetooth/bloc/bluetooth_connection_service_bloc.dart';
-import 'package:health_ring_ai/ui/bluetooth/bloc/bluetooth_connection_service_state.dart';
 import 'package:health_ring_ai/ui/screens/home.dart';
 import 'package:health_ring_ai/ui/screens/onboarding/forms_screen.dart';
 import 'package:health_ring_ai/ui/screens/onboarding/landing_page.dart';
 
-class AuthWrapper extends StatelessWidget {
+class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
 
   @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  late Future<Map<String, bool>> _preferencesFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _preferencesFuture = _loadPreferences();
+  }
+
+  Future<Map<String, bool>> _loadPreferences() async {
+    final prefsRepository = context.read<PreferencesRepository>();
+    return {
+      'hasBeenFormScreen': await prefsRepository.isUserConnected,
+      'isFirstLaunch': await prefsRepository.isFirstLaunch,
+    };
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return BlocBuilder<BluetoothBloc, BluetoothState>(
-      builder: (context, state) {
-        final prefsRepository = context.read<PreferencesRepository>();
+    return FutureBuilder<Map<String, bool>>(
+      future: _preferencesFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
 
-        return FutureBuilder<bool>(
-          future: prefsRepository.isUserConnected,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
+        final isFirstLaunch = snapshot.data?['isFirstLaunch'] ?? true;
 
-            final hasBeenFormScreen = snapshot.data ?? false;
+        if (isFirstLaunch == false) {
+          return const MainAppScaffold(
+            showBottomNav: false,
+            child: HomeScreen(),
+          );
+        }
+        final hasBeenFormScreen = snapshot.data?['hasBeenFormScreen'] ?? false;
 
-            if (hasBeenFormScreen) {
-              // Show main app with bottom nav
-              return const MainAppScaffold(
-                showBottomNav: false,
-                child: FormsScreen(),
-              );
-            } else {
-              // Hide bottom nav during onboarding
-              return const MainAppScaffold(
-                showBottomNav: false,
-                child: LandingPage(),
-              );
-            }
-          },
-        );
+        if (hasBeenFormScreen) {
+          return const MainAppScaffold(
+            showBottomNav: false,
+            child: FormsScreen(),
+          );
+        }
+
+        return const LandingPage();
       },
     );
   }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:health_ring_ai/ui/bluetooth/bloc/bluetooth_connection_service_bloc.dart';
-import 'package:health_ring_ai/ui/bluetooth/bloc/bluetooth_connection_service_state.dart';
+import 'package:health_ring_ai/ui/bluetooth/bluethooth_connection_bloc/bluetooth_connection_service_bloc.dart';
+import 'package:health_ring_ai/ui/bluetooth/bluethooth_connection_bloc/bluetooth_connection_service_state.dart';
 import 'package:health_ring_ai/ui/screens/onboarding/search_ring.dart';
 
 class FoundedRingPage extends StatelessWidget {
@@ -64,9 +64,9 @@ class FoundedRingPage extends StatelessWidget {
                         padding: EdgeInsets.zero,
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        itemCount: state.devices!.length,
+                        itemCount: state.devices.length,
                         itemBuilder: (context, index) {
-                          final device = state.devices![index];
+                          final device = state.devices[index];
                           return ListTile(
                             title: Text(
                               device.name ?? 'Unknown Device',
@@ -91,8 +91,10 @@ class FoundedRingPage extends StatelessWidget {
                               // context.read<BluetoothBloc>().add(
                               //       ConnectToDevice(device: device),
                               //     );
-                              Navigator.pushNamed(
-                                  context, '/connect_ring_page');
+                              // print('device: $device');
+                              // print('device: ');
+                              Navigator.pushNamed(context, '/connect_ring_page',
+                                  arguments: device);
                             },
                           );
                         },

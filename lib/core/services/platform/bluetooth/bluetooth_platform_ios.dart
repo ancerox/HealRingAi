@@ -1,4 +1,7 @@
 import 'package:flutter/services.dart';
+import 'package:health_ring_ai/core/models/blood_oxygen_data.dart';
+import 'package:health_ring_ai/core/models/combined_health_data.dart';
+import 'package:health_ring_ai/core/models/heart_rate_data.dart';
 
 import './bluetooth_platform_interface.dart';
 
@@ -85,8 +88,11 @@ class BluetoothPlatformIOS implements BluetoothPlatformInterface {
   Future<void> connectToDevice(String deviceId) async {
     try {
       await _channel.invokeMethod('connectToDevice', {'deviceId': deviceId});
-      _lastConnectedDeviceId = deviceId;
     } on PlatformException catch (e) {
+      if (e.code == 'DEVICE_OUT_OF_RANGE') {
+        throw Exception(
+            'Device signal is too weak for reliable connection. Please move closer to the device.');
+      }
       throw Exception('Failed to connect to device: ${e.message}');
     }
   }
@@ -102,19 +108,41 @@ class BluetoothPlatformIOS implements BluetoothPlatformInterface {
   }
 
   @override
-  Stream<bool> get connectionStatus {
+  Stream<ConnectionInfo> get connectionStatus {
     return _connectionChannel.receiveBroadcastStream().map((dynamic event) {
-      if (event is Map<dynamic, dynamic>) {
-        final isConnected = event['connected'] as bool;
-        final device = event['device'] as Map<dynamic, dynamic>?;
+      if (event is Map) {
+        final isConnected = event['connected'] as bool? ?? false;
+        final state = event['state'] as String? ?? 'disconnected';
+        final deviceMap = event['device'] as Map?;
 
-        if (isConnected && device != null) {
-          _lastConnectedDeviceId = device['id'] as String;
+        BluetoothDevice? device;
+        if (deviceMap != null) {
+          try {
+            device = BluetoothDevice(
+              id: deviceMap['id'] as String,
+              name: deviceMap['name'] as String,
+              rssi: deviceMap['rssi'] as int? ?? 0,
+              manufacturerData: deviceMap['manufacturerData'] as String? ?? '',
+            );
+            // print('Received device data: ${deviceMap.toString()}'); // Debug log
+          } catch (e) {
+            print('Error parsing device data: $e'); // Debug log
+            print('Raw device data: ${deviceMap.toString()}'); // Debug log
+          }
         }
 
-        return isConnected;
+        return ConnectionInfo(
+          connected: isConnected,
+          state: state,
+          device: device,
+        );
       }
-      return event as bool;
+
+      return ConnectionInfo(
+        connected: false,
+        state: 'disconnected',
+        device: null,
+      );
     });
   }
 
@@ -155,4 +183,88 @@ class BluetoothPlatformIOS implements BluetoothPlatformInterface {
       _isReconnecting = false;
     }
   }
+
+  @override
+  Future<int> getBatteryLevel() async {
+    try {
+      final int result = await _channel.invokeMethod('getBatteryLevel');
+      return result;
+    } on PlatformException catch (e) {
+      throw Exception('Failed to get battery level: ${e.message}');
+    }
+  }
+
+  @override
+  Future<CombinedHealthData> getHealthData(List<int> dayIndices) async {
+    try {
+      print('Flutter: Requesting health data for days: $dayIndices');
+      final result = await _channel.invokeMethod(
+        'getHeartRateHistory',
+        {'dayIndices': dayIndices},
+      );
+      print('Flutter: Raw health data received: $result');
+
+      // Process Heart Rate Data
+      final heartRateData = (result['heartRateData'] as List<dynamic>)
+          .map((dynamic item) {
+            if (item == null) return null;
+            try {
+              final map = Map<String, dynamic>.from(item as Map);
+              return HeartRateData.fromJson(map);
+            } catch (e) {
+              print('Flutter: Error processing heart rate item: $e');
+              return null;
+            }
+          })
+          .whereType<HeartRateData>()
+          .toList();
+
+      // Process Blood Oxygen Data
+      final bloodOxygenData = (result['bloodOxygenData'] as List<dynamic>)
+          .map((dynamic item) {
+            if (item == null) return null;
+            try {
+              final map = Map<String, dynamic>.from(item as Map);
+              return BloodOxygenData.fromJson(map);
+            } catch (e) {
+              print('Flutter: Error processing blood oxygen item: $e');
+              return null;
+            }
+          })
+          .whereType<BloodOxygenData>()
+          .toList();
+
+      print(
+          'Flutter: Successfully processed ${heartRateData.length} heart rate records');
+      print(
+          'Flutter: Successfully processed ${bloodOxygenData.length} blood oxygen records');
+
+      return CombinedHealthData(
+        heartRateData: heartRateData,
+        bloodOxygenData: bloodOxygenData,
+      );
+    } on PlatformException catch (e) {
+      print('Flutter: PlatformException while getting health data:');
+      print('  Code: ${e.code}');
+      print('  Message: ${e.message}');
+      print('  Details: ${e.details}');
+      throw Exception('Failed to get health data: ${e.message}');
+    } catch (e, stack) {
+      print('Flutter: Unexpected error while getting health data: $e');
+      print('Stack trace: $stack');
+      rethrow;
+    }
+  }
+}
+
+class ConnectionInfo {
+  final bool connected;
+  final String state;
+  final BluetoothDevice? device;
+
+  ConnectionInfo({
+    required this.connected,
+    required this.state,
+    this.device,
+  });
 }
