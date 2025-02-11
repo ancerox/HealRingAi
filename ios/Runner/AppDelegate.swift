@@ -21,6 +21,10 @@ import QCBandSDK
     private let CONNECTION_TIMEOUT: TimeInterval = 10.0
     private var connectionTimer: Timer?
     private var keepAliveTimer: Timer?
+    private var heartRateCallback: (([String: Any]) -> Void)?
+    private var heartRateEventSink: FlutterEventSink?
+    private var lastHeartRate: Int?
+    private var sameHeartRateTimer: Timer?
     
     private var lastConnectedDeviceId: String? {
         get {
@@ -67,6 +71,23 @@ import QCBandSDK
         setupMethodChannel()
         setupEventChannels()
         
+        // Add event channel handler
+        let heartRateStreamHandler = StreamHandler()
+        heartRateStreamHandler.onListen = { [weak self] (arguments: Any?, events: @escaping FlutterEventSink) -> FlutterError? in
+            self?.heartRateEventSink = events
+            return nil
+        }
+        
+        heartRateStreamHandler.onCancel = { [weak self] (arguments: Any?) -> FlutterError? in
+            self?.heartRateEventSink = nil
+            return nil
+        }
+        
+        // Setup heart rate event channel
+        let eventChannel = FlutterEventChannel(name: "com.yourcompany.heartrate/stream",
+                                               binaryMessenger: controller.binaryMessenger)
+        eventChannel.setStreamHandler(heartRateStreamHandler)
+        
         GeneratedPluginRegistrant.register(with: self)
         return super.application(application, didFinishLaunchingWithOptions: launchOptions)
     }
@@ -96,7 +117,12 @@ import QCBandSDK
                 self.handleDisconnectDevice(result: result)
             case "getHeartRateHistory":
                 self.handleGetHeartRateData(call: call, result: result)
-         
+            case "getSleepData":
+                self.handleGetSleepData(call: call, result: result)
+            case "getBatteryLevel":
+                self.handleGetBatteryLevel(result: result)
+            case "startMeasurement":
+                self.handleStartMeasuring(call: call, result: result)
             default:
                 result(FlutterMethodNotImplemented)
             }
@@ -111,10 +137,31 @@ import QCBandSDK
         
         // Connection Event Channel
         connectionEventChannel.setStreamHandler(ConnectionStreamHandler(sink: { [weak self] sink in
-            self?.connectionEventSink = sink
-            self?.isEventChannelSetup = true
-            // Check initial connection state after event channel is ready
-            self?.checkInitialConnectionState()
+            guard let self = self else { return }
+            self.connectionEventSink = sink
+            self.isEventChannelSetup = true
+            
+            // Send initial connection state immediately when stream is established
+            if let peripheral = self.connectedPeripheral {
+                switch peripheral.state {
+                case .connecting:
+                    self.sendConnectionState(peripheral, state: "connecting")
+                case .connected:
+                    self.sendConnectionState(peripheral, state: "connected")
+                case .disconnecting:
+                    self.sendConnectionState(peripheral, state: "disconnecting")
+                case .disconnected:
+                    self.sendConnectionState(peripheral, state: "disconnected")
+                @unknown default:
+                    self.sendConnectionState(peripheral, state: "unknown")
+                }
+            } else {
+                // No device connected
+                self.sendConnectionState(nil, state: "disconnected")
+            }
+            
+            // Check for potential connections after sending initial state
+            self.checkInitialConnectionState()
         }))
     }
     
@@ -326,22 +373,22 @@ import QCBandSDK
         }
     }
     
-    private func startKeepAliveTimer() {
-        // Cancel any existing timer
-        keepAliveTimer?.invalidate()
+    // private func startKeepAliveTimer() {
+    //     // Cancel any existing timer
+    //     keepAliveTimer?.invalidate()
         
-        // Start new timer to read RSSI periodically
-        keepAliveTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
-            guard let self = self,
-                  let peripheral = self.connectedPeripheral,
-                  peripheral.state == .connected else {
-                return
-            }
+    //     // Start new timer to read RSSI periodically
+    //     keepAliveTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
+    //         guard let self = self,
+    //               let peripheral = self.connectedPeripheral,
+    //               peripheral.state == .connected else {
+    //             return
+    //         }
             
-            // Read RSSI to keep connection alive
-            peripheral.readRSSI()
-        }
-    }
+    //         // Read RSSI to keep connection alive
+    //         peripheral.readRSSI()
+    //     }
+    // }
     
     private func handleDisconnectDevice(result: @escaping FlutterResult) {
         // Clear stored device ID when explicitly disconnecting
@@ -388,9 +435,7 @@ import QCBandSDK
             ))
             return
         }
-        print("✅ Arguments validated successfully")
         
-        print("🔌 Checking peripheral connection...")
         guard let peripheral = connectedPeripheral else {
             print("❌ No peripheral connected")
             result(FlutterError(
@@ -400,61 +445,65 @@ import QCBandSDK
             ))
             return
         }
-        print("✅ Peripheral connection confirmed")
         
-        print("🔄 Converting day indices...")
         let dayIndices = dayIndicesNS.map { NSNumber(value: $0) }
-        print("✅ Day indices converted: \(dayIndices)")
         
-        print("⚡️ Ensuring peripheral is added...")
+        // Create a strong reference to self to prevent premature deallocation
+        let strongSelf = self
+        
         ensurePeripheralAdded(peripheral: peripheral) {
-            print("✅ Peripheral added successfully")
+            // Use a serial queue to ensure operations complete in order
+            let serialQueue = DispatchQueue(label: "com.app.heartrate.queue")
             
-            let dispatchGroup = DispatchGroup()
-            var heartRateData: [[String: Any]] = []
-            var bloodOxygenData: [[String: Any]] = []
-            var heartRateError: Error?
-            
-            // Get Heart Rate Data first
-            dispatchGroup.enter()
-            QCSDKCmdCreator.getSchedualHeartRateData(
-                withDayIndexs: dayIndices,
-                success: { models in
-                    heartRateData = models.map { model -> [String: Any] in
-                        return [
-                            "date": model.date as Any? ?? "",
-                            "heartRates": (model.heartRates ?? []) as [Any],
-                            "secondInterval": model.secondInterval as Int,
-                            "deviceId": model.deviceID as Any? ?? "",
-                            "deviceType": model.deviceType as Any? ?? ""
-                        ]
+            serialQueue.async {
+                let semaphore = DispatchSemaphore(value: 0)
+                var heartRateData: [[String: Any]] = []
+                var bloodOxygenData: [[String: Any]] = []
+                var heartRateError: Error?
+                
+                // Get Heart Rate Data
+                QCSDKCmdCreator.getSchedualHeartRateData(
+                    withDayIndexs: dayIndices,
+                    success: { models in
+                        heartRateData = models.map { model -> [String: Any] in
+                            return [
+                                "date": model.date as Any? ?? "",
+                                "heartRates": (model.heartRates ?? []) as [Any],
+                                "secondInterval": model.secondInterval as Int,
+                                "deviceId": model.deviceID as Any? ?? "",
+                                "deviceType": model.deviceType as Any? ?? ""
+                            ]
+                        }
+                        semaphore.signal()
+                    },
+                    fail: { 
+                        heartRateError = NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to read heart rate data"])
+                        semaphore.signal()
                     }
-                    dispatchGroup.leave()
-                },
-                fail: { 
-                    heartRateError = NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to read heart rate data"])
-                    dispatchGroup.leave()
-                }
-            )
-            
-            // Wait for heart rate data to complete before starting blood oxygen requests
-            dispatchGroup.notify(queue: .main) {
-                // Process blood oxygen data sequentially with delays
-                self.processBloodOxygenData(dayIndices: dayIndicesNS, currentIndex: 0) { finalBloodOxygenData in
-                    // Combine and return the results
-                    let combinedData: [String: Any] = [
-                        "heartRateData": heartRateData,
-                        "bloodOxygenData": finalBloodOxygenData
-                    ]
-                    
-                    if let error = heartRateError {
+                )
+                
+                // Wait for heart rate data to complete
+                semaphore.wait()
+                
+                // Process blood oxygen data only after heart rate data is complete
+                if heartRateError == nil {
+                    strongSelf.processBloodOxygenData(dayIndices: dayIndicesNS, currentIndex: 0) { finalBloodOxygenData in
+                        let combinedData: [String: Any] = [
+                            "heartRateData": heartRateData,
+                            "bloodOxygenData": finalBloodOxygenData
+                        ]
+                        
+                        DispatchQueue.main.async {
+                            result(combinedData)
+                        }
+                    }
+                } else {
+                    DispatchQueue.main.async {
                         result(FlutterError(
                             code: "DATA_READ_FAILED",
-                            message: "Failed to read heart rate data: \(error.localizedDescription)",
+                            message: "Failed to read heart rate data: \(heartRateError?.localizedDescription ?? "")",
                             details: nil
                         ))
-                    } else {
-                        result(combinedData)
                     }
                 }
             }
@@ -470,35 +519,35 @@ import QCBandSDK
         
         let dayIndex = dayIndices[currentIndex]
         
-        // Add a delay between requests
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            QCSDKCmdCreator.getBloodOxygenData(byDayIndex: dayIndex) { (models, error) in
-                var newData = accumulatedData
-                
-                if let error = error {
-                    print("Warning: Failed to get blood oxygen data for day \(dayIndex): \(error.localizedDescription)")
-                } else if let models = models {
-                    let oxygenData = (models as NSArray).map { item -> [String: Any] in
-                        guard let model = item as? QCBloodOxygenModel else { return [:] }
-                        return [
-                            "date": model.date?.timeIntervalSince1970 ?? 0,
-                            "bloodOxygenLevels": [model.soa2],
-                            "secondInterval": 0,
-                            "deviceId": model.device ?? "",
-                            "deviceType": ""
-                        ]
-                    }
-                    newData.append(contentsOf: oxygenData)
+        QCSDKCmdCreator.getBloodOxygenData(byDayIndex: dayIndex) { (models, error) in
+            var newData = accumulatedData
+            
+            if let error = error {
+                print("Warning: Failed to get blood oxygen data for day \(dayIndex): \(error.localizedDescription)")
+                // Don't add anything to newData when there's an error
+            } else if let models = models, !models.isEmpty {
+                let oxygenData = (models as NSArray).compactMap { item -> [String: Any]? in
+                    guard let model = item as? QCBloodOxygenModel,
+                          model.soa2 > 0 else { return nil }
+                    return [
+                        "date": model.date?.timeIntervalSince1970 ?? 0,
+                        "bloodOxygenLevels": [model.soa2],
+                        "secondInterval": 0,
+                        "deviceId": model.device ?? "",
+                        "deviceType": ""
+                    ]
                 }
-                
-                // Process next index recursively
-                self.processBloodOxygenData(
-                    dayIndices: dayIndices,
-                    currentIndex: currentIndex + 1,
-                    accumulatedData: newData,
-                    completion: completion
-                )
+                newData.append(contentsOf: oxygenData)
             }
+            // If models is nil or empty, we don't add anything to newData
+            
+            // Process next index recursively
+            self.processBloodOxygenData(
+                dayIndices: dayIndices,
+                currentIndex: currentIndex + 1,
+                accumulatedData: newData,
+                completion: completion
+            )
         }
     }
     
@@ -512,6 +561,178 @@ import QCBandSDK
         } else {
             // If peripheral is already added, just call completion
             completion()
+        }
+    }
+    
+    private func handleGetSleepData(call: FlutterMethodCall, result: @escaping FlutterResult) {
+        print("🔍 handleGetSleepData called")
+        
+        // Check device readiness
+        guard isDeviceReadyForRequests() else {
+            print("❌ Device not ready for requests")
+            result(FlutterError(
+                code: "DEVICE_NOT_READY",
+                message: "Device is not ready for requests",
+                details: nil
+            ))
+            return
+        }
+        
+        // Validate arguments
+        guard let args = call.arguments as? [String: Any],
+              let dayIndex = args["dayIndex"] as? Int else {
+            print("❌ Invalid arguments received")
+            result(FlutterError(
+                code: "INVALID_ARGUMENT",
+                message: "Invalid arguments",
+                details: nil
+            ))
+            return
+        }
+        
+        print("📅 Requesting sleep data for day index: \(dayIndex)")
+        
+        // Ensure peripheral is added before making request
+        guard let peripheral = connectedPeripheral else {
+            print("❌ No peripheral connected")
+            result(FlutterError(
+                code: "DEVICE_NOT_CONNECTED",
+                message: "No device connected",
+                details: nil
+            ))
+            return
+        }
+        
+        print("🔌 Peripheral connected: \(peripheral.name ?? "Unknown")")
+        print("📡 Connection state: \(peripheral.state.rawValue)")
+        
+        ensurePeripheralAdded(peripheral: peripheral) {
+            print("✅ Peripheral added successfully, requesting sleep data...")
+            
+            QCSDKCmdCreator.getSleepDetailDataV2(byDay: dayIndex, sleepDatas: { sleepDict in
+                print("📊 Received sleep data response")
+                
+                // Check for empty data first
+                guard let dayKey = String(dayIndex).addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+                      let dailyData = sleepDict[dayKey],
+                      !dailyData.isEmpty else {
+                    print("⚠️ No sleep data found for day \(dayIndex)")
+                    DispatchQueue.main.async {
+                        result([])
+                    }
+                    return
+                }
+                
+                let sleepDataResult = dailyData.map { model -> [String: Any] in
+                    return [
+                        "type": model.type.rawValue,
+                        "typeString": {
+                            switch model.type {
+                            case .SLEEPTYPENONE: return "no_data"
+                            case .SLEEPTYPESOBER: return "awake"
+                            case .SLEEPTYPELIGHT: return "light"
+                            case .SLEEPTYPEDEEP: return "deep"
+                            case .SLEEPTYPEUNWEARED: return "not_worn"
+                            @unknown default: return "unknown"
+                            }
+                        }(),
+                        "startTime": model.happenDate ?? "",
+                        "endTime": model.endTime ?? "",
+                        "durationMinutes": model.total
+                    ]
+                }
+                
+                DispatchQueue.main.async {
+                    print("✅ Successfully retrieved \(sleepDataResult.count) sleep records")
+                    result(sleepDataResult)
+                }
+                
+            }, fail: {
+                print("❌ Failed to retrieve sleep data")
+                DispatchQueue.main.async {
+                    result(FlutterError(
+                        code: "SLEEP_DATA_FAILED",
+                        message: "Failed to retrieve sleep data",
+                        details: nil
+                    ))
+                }
+            })
+        }
+    }
+    
+    // Add this new handler method
+    private func handleGetBatteryLevel(result: @escaping FlutterResult) {
+        guard let peripheral = connectedPeripheral else {
+            result(FlutterError(
+                code: "DEVICE_NOT_CONNECTED",
+                message: "No device connected",
+                details: nil
+            ))
+            return
+        }
+        
+        QCSDKCmdCreator.readBatterySuccess(
+            { batteryLevel in
+                result(batteryLevel)
+            },
+            failed: {
+                result(FlutterError(
+                    code: "BATTERY_READ_FAILED",
+                    message: "Failed to read battery level",
+                    details: nil
+                ))
+            }
+        )
+    }
+    
+    private func handleStartMeasuring(call: FlutterMethodCall, result: @escaping FlutterResult) {
+        print("🔍 Starting measurement...")
+        
+        guard let args = call.arguments as? [String: Any],
+              let typeRaw = args["type"] as? Int,
+              let measuringType = QCMeasuringType(rawValue: typeRaw) else {
+            result(FlutterError(
+                code: "INVALID_ARGUMENT", 
+                message: "Invalid measurement type",
+                details: nil
+            ))
+            return
+        }
+        
+        // Reset tracking variables
+        lastHeartRate = nil
+        sameHeartRateTimer?.invalidate()
+        
+        QCSDKManager.shareInstance().startToMeasuring(withOperateType: measuringType) { (success, measurementResult, error) in
+            if success {
+                if let hr = measurementResult as? NSNumber {
+                    let heartRate = hr.intValue
+                    print("💓 Heart rate measurement: \(heartRate) bpm")
+                    
+                    // Send the heart rate data
+                    let response: [String: Any] = [
+                        "heartRate": heartRate,
+                        "status": "success"
+                    ]
+                    self.heartRateCallback?(response)
+                    
+                    // Return the heart rate value to Flutter
+                    result(response)
+                }
+            } else {
+                let errorResponse: [String: Any] = [
+                    "error": error?.localizedDescription ?? "Measurement failed",
+                    "status": "error"
+                ]
+                self.heartRateCallback?(errorResponse)
+                
+                // Return the error to Flutter
+                result(FlutterError(
+                    code: "MEASUREMENT_FAILED",
+                    message: error?.localizedDescription ?? "Measurement failed",
+                    details: nil
+                ))
+            }
         }
     }
     
@@ -558,20 +779,33 @@ import QCBandSDK
         }
     }
     
-    private func sendConnectionState(peripheral: CBPeripheral, isConnected: Bool) {
-        print("Sending connection state - Connected: \(isConnected), Device: \(peripheral.name ?? "Unknown")") // Debug log
+    private func sendConnectionState(_ peripheral: CBPeripheral?, state: String) {
+        var deviceInfo: [String: Any] = [
+            "connected": state == "connected",
+            "state": state
+        ]
         
-        let deviceInfo: [String: Any] = [
-            "connected": isConnected,
-            "state": isConnected ? "connected" : "disconnected",
-            "device": [
+        if let peripheral = peripheral {
+            deviceInfo["device"] = [
                 "id": peripheral.identifier.uuidString,
                 "name": peripheral.name ?? "Unknown Device",
+                "rssi": deviceRSSI[peripheral.identifier.uuidString] ?? 0,
+                "manufacturerData": ""
+            ]
+        } else {
+            deviceInfo["device"] = [
+                "id": "",
+                "name": "No Device",
                 "rssi": 0,
                 "manufacturerData": ""
             ]
-        ]
+        }
+        
         connectionEventSink?(deviceInfo)
+    }
+    
+    private func sendConnectionState(peripheral: CBPeripheral, isConnected: Bool) {
+        sendConnectionState(peripheral, state: isConnected ? "connected" : "disconnected")
     }
     
     func centralManager(
@@ -612,29 +846,16 @@ import QCBandSDK
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
         print("Connected to device: \(peripheral.name ?? "Unknown")")
         
-        // Cancel connection timer
+        // Cancel connection timer immediately
         connectionTimer?.invalidate()
         connectionTimer = nil
         
-        // Start keep-alive timer
-        startKeepAliveTimer()
-        
-        // Set high priority for the connection
-//       if #available(iOS 11.0, *) {
-//        peripheral.setDesiredConnectionLatency(.connectionLatencyLow, for: peripheral)
-//    }
-//    
-        
-        // Add a delay before adding to SDK to ensure proper initialization
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            QCSDKManager.shareInstance().add(peripheral) { _ in
-                self.isPeripheralAdded = true
-                
-                // Add another small delay after SDK initialization
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    self.sendConnectionState(peripheral: peripheral, isConnected: true)
-                }
-            }
+        // Add to SDK immediately without delay
+        QCSDKManager.shareInstance().add(peripheral) { _ in
+            self.isPeripheralAdded = true
+            
+            print("✅ Peripheral added to SDK")
+            self.sendConnectionState(peripheral: peripheral, isConnected: true)
         }
     }
     
@@ -648,6 +869,9 @@ import QCBandSDK
         keepAliveTimer?.invalidate()
         keepAliveTimer = nil
         
+        // Clean up SDK state
+        QCSDKManager.shareInstance().remove(peripheral)
+        
         isPeripheralAdded = false
         
         // Attempt immediate reconnection if disconnection was unexpected
@@ -655,6 +879,7 @@ import QCBandSDK
             print("Unexpected disconnection - attempting immediate reconnection...")
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
                 guard let self = self else { return }
+                print("trying to reconnect!!!!!!")
                 self.centralManager.connect(peripheral, options: nil)
             }
             return
@@ -736,6 +961,7 @@ import QCBandSDK
         guard let peripheral = connectedPeripheral,
               peripheral.state == .connected,
               isPeripheralAdded else {
+            print("❌ Device not ready - Connected: \(connectedPeripheral?.state == .connected), Added: \(isPeripheralAdded)")
             return false
         }
         return true
@@ -780,5 +1006,18 @@ class ConnectionStreamHandler: NSObject, FlutterStreamHandler {
     func onCancel(withArguments arguments: Any?) -> FlutterError? {
         sinkCallback?(nil)
         return nil
+    }
+}
+
+class StreamHandler: NSObject, FlutterStreamHandler {
+    var onListen: ((Any?, @escaping FlutterEventSink) -> FlutterError?)?
+    var onCancel: ((Any?) -> FlutterError?)?
+    
+    func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
+        return onListen?(arguments, events)
+    }
+    
+    func onCancel(withArguments arguments: Any?) -> FlutterError? {
+        return onCancel?(arguments)
     }
 }
