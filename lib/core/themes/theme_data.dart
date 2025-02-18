@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class CustomTheme {
-  //Success Color
+  // Success Color
   static const Color successColor = Color(0xFF7FC855);
 
   // Icon color used in bluetooth icon
@@ -17,20 +17,70 @@ class CustomTheme {
   static const Color formBackground = Color(0xFF202020);
   static const Color formBorder = Color(0xFF303030);
 
-  // Text style for headings
-  static const TextStyle headingStyle = TextStyle(
+  // Typography Styles
+  static const TextStyle headerXLarge = TextStyle(
     color: Colors.white,
-    fontSize: 24,
+    fontSize: 28,
+    fontFamily: 'SFProDisplay',
     fontWeight: FontWeight.w600,
   );
 
-  // iOS/Text Small style
-  static TextStyle iosTextSmall = const TextStyle(
-    color: Color.fromRGBO(174, 174, 178, 1),
-    fontFamily: 'SF Pro Text',
-    fontSize: 14,
+  static const TextStyle headerLarge = TextStyle(
+    color: Colors.white,
+    fontSize: 20,
+    fontFamily: 'SFProDisplay',
+    fontWeight: FontWeight.w600,
+  );
+
+  static const TextStyle textLarge = TextStyle(
+    color: Colors.white,
+    fontSize: 20,
+    fontFamily: 'SFProText',
     fontWeight: FontWeight.w400,
-    height: 16.71 / 14, // Line height 16.71px
+  );
+
+  static const TextStyle headerNormal = TextStyle(
+    color: Colors.white,
+    fontSize: 16,
+    height: 22 / 16,
+    fontFamily: 'SFProDisplay',
+    fontWeight: FontWeight.w600,
+  );
+
+  static const TextStyle textNormal = TextStyle(
+    color: Colors.white,
+    fontSize: 16,
+    height: 22 / 16,
+    fontFamily: 'SFProText',
+    fontWeight: FontWeight.w400,
+  );
+
+  static const TextStyle textSmallBold = TextStyle(
+    color: Colors.white,
+    fontSize: 14,
+    fontFamily: 'SFProText',
+    fontWeight: FontWeight.w600,
+  );
+
+  static const TextStyle textSmall = TextStyle(
+    color: Color(0xFFAEAEB2),
+    fontSize: 14,
+    fontFamily: 'SFProText',
+    fontWeight: FontWeight.w400,
+  );
+
+  static const TextStyle textXSmallBold = TextStyle(
+    color: Colors.white,
+    fontSize: 12,
+    fontFamily: 'SFProText',
+    fontWeight: FontWeight.w600,
+  );
+
+  static const TextStyle textXSmall = TextStyle(
+    color: Colors.white,
+    fontSize: 12,
+    fontFamily: 'SFProText',
+    fontWeight: FontWeight.w400,
   );
 
   // Button styling
@@ -45,6 +95,7 @@ class CustomTheme {
 
   static const TextStyle buttonTextStyle = TextStyle(
     fontWeight: FontWeight.w500,
+    fontFamily: 'SFProText',
     color: Colors.black,
   );
 
@@ -54,6 +105,7 @@ class CustomTheme {
     blurRadius: 40,
     spreadRadius: 10,
   );
+
   static RadialGradient get radialGradient {
     return const RadialGradient(
       center: Alignment.center,
@@ -67,11 +119,9 @@ class CustomTheme {
   }
 
   // Surface colors
-  static const Color surfacePrimary =
-      Color(0xFF4B4B4B); // was calendarSelectedDay
-  static const Color surfaceSecondary =
-      Color(0xFF151515); // was calendarFutureDay
-  static const Color surfaceTertiary = Color(0xFF202020); // was calendarPastDay
+  static const Color surfacePrimary = Color(0xFF4B4B4B);
+  static const Color surfaceSecondary = Color(0xFF151515);
+  static const Color surfaceTertiary = Color(0xFF202020);
 
   static const Color textColorSecondary = Color(0xFFAEAEB2);
 }

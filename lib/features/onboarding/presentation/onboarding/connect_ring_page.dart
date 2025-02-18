@@ -4,6 +4,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:health_ring_ai/core/ring_connection/data/models/bluetooth_device.dart';
 import 'package:health_ring_ai/core/ring_connection/state/bluetooth_connection_bloc/bluetooth_connection_service_bloc.dart';
 import 'package:health_ring_ai/core/ring_connection/state/bluetooth_connection_bloc/bluetooth_connection_service_state.dart';
@@ -149,8 +150,7 @@ class _ConnectRingPageState extends State<ConnectRingPage>
                             Future.delayed(const Duration(milliseconds: 1000),
                                 () {
                               if (mounted && context.mounted) {
-                                Navigator.of(context)
-                                    .pushReplacementNamed('/information_page');
+                                context.go('/information_page');
                               }
                             });
                           }

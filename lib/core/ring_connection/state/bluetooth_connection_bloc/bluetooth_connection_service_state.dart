@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:health_ring_ai/core/ring_connection/data/models/bluetooth_device.dart';
-import 'package:health_ring_ai/core/ring_connection/data/models/heart_rate_data.dart';
+import 'package:health_ring_ai/features/continuous_monitoring/domain/heart_rate_data.dart';
 
 enum ConnectionStatus { disconnected, connecting, connected }
 

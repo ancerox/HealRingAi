@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:health_ring_ai/core/ring_connection/data/bluetooth_service.dart';
-import 'package:health_ring_ai/core/ring_connection/data/models/combined_health_data.dart';
-import 'package:health_ring_ai/core/ring_connection/data/models/sleep_data.dart';
 import 'package:health_ring_ai/core/ring_connection/state/bluetooth_connection_bloc/bluetooth_connection_service_bloc.dart';
 import 'package:health_ring_ai/core/ring_connection/state/bluetooth_connection_bloc/bluetooth_connection_service_state.dart';
+import 'package:health_ring_ai/features/continuous_monitoring/domain/combined_health_data.dart';
+import 'package:health_ring_ai/features/continuous_monitoring/domain/sleep_data.dart';
 
 part 'continuous_monitoring_event.dart';
 part 'continuous_monitoring_state.dart';
@@ -24,7 +24,7 @@ class ContinuousMonitoringBloc
     required BluetoothBloc bluetoothBloc,
   })  : _bluetoothService = bluetoothService,
         _bluetoothBloc = bluetoothBloc,
-        super(HeartRateInitial()) {
+        super(HomeDataLoading()) {
     on<GetHeartRateData>(_onGetHeartRateData);
     on<GetSleepData>(_onGetSleepData);
     on<GetHomeData>(_onGetHomeData);

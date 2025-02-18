@@ -1,8 +1,9 @@
 import 'dart:io';
 
 import 'package:health_ring_ai/core/ring_connection/data/models/bluetooth_device.dart';
-import 'package:health_ring_ai/core/ring_connection/data/models/combined_health_data.dart';
-import 'package:health_ring_ai/core/ring_connection/data/models/sleep_data.dart';
+import 'package:health_ring_ai/features/continuous_monitoring/domain/combined_health_data.dart';
+import 'package:health_ring_ai/features/continuous_monitoring/domain/sleep_data.dart';
+import 'package:hive/hive.dart';
 
 import '../platform/bluetooth_platform_android.dart';
 import '../platform/bluetooth_platform_ios.dart';
@@ -14,6 +15,8 @@ class BluetoothService {
   // Singleton pattern
   static final BluetoothService _instance = BluetoothService._internal();
   factory BluetoothService() => _instance;
+
+  final Box _cache = Hive.box('bluetooth_cache');
 
   BluetoothService._internal() : _platform = _getPlatform();
 
@@ -59,11 +62,53 @@ class BluetoothService {
 
   Future<int> getBatteryLevel() => _platform.getBatteryLevel();
 
-  Future<CombinedHealthData?> getHealthData(List<int> dayIndices) =>
-      _platform.getHealthData(dayIndices);
+  Future<CombinedHealthData?> getHealthData(List<int> dayIndices) async {
+    final key = 'health_data_${dayIndices.join("_")}';
 
-  Future<List<SleepData>> getSleepData(int dayIndex) =>
-      _platform.getSleepData(dayIndex);
+    try {
+      // Check if cached data exists
+      final cachedJson = _cache.get(key);
+      if (cachedJson != null) {
+        return CombinedHealthData.fromJson(cachedJson);
+      }
+
+      // If not cached, fetch from platform
+      final healthData = await _platform.getHealthData(dayIndices);
+
+      // Store in cache if data is available
+      if (healthData != null) {
+        _cache.put(key, healthData.toJson());
+      }
+
+      return healthData;
+    } catch (e, stacktrace) {
+      print('Error fetching health data: $e\n$stacktrace');
+      return null; // Return null to prevent crashes
+    }
+  }
+
+  Future<List<SleepData>> getSleepData(int dayIndex) async {
+    final key = 'sleep_data_$dayIndex';
+
+    try {
+      // Check if cached data exists
+      final cachedData = _cache.get(key);
+      if (cachedData != null) {
+        return List<SleepData>.from(cachedData);
+      }
+
+      // Fetch from platform
+      final sleepData = await _platform.getSleepData(dayIndex);
+
+      // Store in cache
+      _cache.put(key, sleepData);
+
+      return sleepData;
+    } catch (e, stacktrace) {
+      print('Error fetching sleep data: $e\n$stacktrace');
+      return [];
+    }
+  }
 
   Future<bool> reconnectToLastDevice() => _platform.reconnectToLastDevice();
 

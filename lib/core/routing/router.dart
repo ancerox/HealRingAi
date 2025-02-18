@@ -1,60 +1,123 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:health_ring_ai/core/app.dart';
 import 'package:health_ring_ai/core/ring_connection/data/models/bluetooth_device.dart';
+import 'package:health_ring_ai/features/ai_chat/presentation/ai_chat_screen.dart';
+import 'package:health_ring_ai/features/ai_chat/presentation/ai_chat_speech_screen.dart';
 import 'package:health_ring_ai/features/continuous_monitoring/presentation/home/body_metrics_screen.dart';
 import 'package:health_ring_ai/features/continuous_monitoring/presentation/home/home.dart';
 import 'package:health_ring_ai/features/continuous_monitoring/presentation/home/sleep_data_screen.dart';
 import 'package:health_ring_ai/features/onboarding/presentation/onboarding/connect_ring_page.dart';
 import 'package:health_ring_ai/features/onboarding/presentation/onboarding/forms_screen.dart';
 import 'package:health_ring_ai/features/onboarding/presentation/onboarding/founded_ring_page.dart';
-import 'package:health_ring_ai/features/onboarding/presentation/onboarding/landing_page.dart';
 import 'package:health_ring_ai/features/onboarding/presentation/onboarding/search_ring.dart';
 
 class AppRouter {
-  static Route<dynamic> generateRoute(RouteSettings settings) {
-    switch (settings.name) {
-      case '/':
-        return MaterialPageRoute(builder: (_) => const LandingPage());
+  AppRouter._();
 
-      case '/onboarding_2':
-        return MaterialPageRoute(builder: (_) => const SmartRingSearchPage());
+  static final _rootNavigationKey = GlobalKey<NavigatorState>();
+  static final _rootNavigationHomeKey = GlobalKey<NavigatorState>();
 
-      case '/founded_ring_page':
-        return MaterialPageRoute(
-          builder: (_) => const FoundedRingPage(),
-        );
-
-      case '/connect_ring_page':
-        return MaterialPageRoute(
-          builder: (_) => ConnectRingPage(
-            device: settings.arguments as BluetoothDevice,
+  static final GoRouter router = GoRouter(
+    navigatorKey: _rootNavigationKey,
+    routes: [
+      GoRoute(
+        path: '/',
+        name: 'AuthWrapper',
+        builder: (context, state) => const AuthWrapper(),
+      ),
+      GoRoute(
+        path: '/onboarding_2',
+        name: 'SmartRingSearchPage',
+        builder: (context, state) => const SmartRingSearchPage(),
+      ),
+      GoRoute(
+        path: '/founded_ring_page',
+        name: 'FoundedRingPage',
+        builder: (context, state) => const FoundedRingPage(),
+      ),
+      GoRoute(
+        path: '/connect_ring_page',
+        name: 'ConnectRingPage',
+        builder: (context, state) => ConnectRingPage(
+          device: state.extra as BluetoothDevice,
+        ),
+      ),
+      GoRoute(
+        path: '/information_page',
+        name: 'FormsScreen',
+        builder: (context, state) => const FormsScreen(),
+      ),
+      GoRoute(
+        path: '/body_metrics',
+        name: 'BodyMetricsScreen',
+        builder: (context, state) => BodyMetricsScreen(
+          dayIndex: state.extra as int,
+        ),
+      ),
+      GoRoute(
+        path: '/ai-chat-speech',
+        name: 'AiChatSpeechScreen',
+        builder: (context, state) => const AiChatSpeechScreen(),
+      ),
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) {
+          return MainWrapper(
+            statefulNavigationShell: navigationShell,
+          );
+        },
+        branches: [
+          StatefulShellBranch(
+            navigatorKey: _rootNavigationHomeKey,
+            routes: [
+              GoRoute(
+                path: '/home',
+                name: 'HomeScreen',
+                builder: (context, state) => const HomeScreen(),
+              ),
+            ],
           ),
-        );
-
-      case '/information_page':
-        return MaterialPageRoute(builder: (_) => const FormsScreen());
-
-      case '/body_metrics':
-        return MaterialPageRoute(
-            builder: (_) => BodyMetricsScreen(
-                  dayIndex: settings.arguments as int,
-                ));
-
-      case '/home':
-        return MaterialPageRoute(builder: (_) => const HomeScreen());
-
-      case '/sleep_data':
-        return MaterialPageRoute(
-          builder: (_) => SleepDataScreen(dayDiff: settings.arguments as int),
-        );
-
-      default:
-        return MaterialPageRoute(
-          builder: (_) => Scaffold(
-            body: Center(
-              child: Text('No route defined for ${settings.name}'),
-            ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/lifespan',
+                name: 'LifespanScreen',
+                builder: (context, state) => const Placeholder(),
+              ),
+            ],
           ),
-        );
-    }
-  }
+          StatefulShellBranch(
+            routes: [
+              ShellRoute(
+                builder: (context, state, child) => child,
+                routes: [
+                  GoRoute(
+                    path: '/ai-chat',
+                    name: 'AiChatScreen',
+                    builder: (context, state) => const AiChatScreen(),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/profile',
+                name: 'ProfileScreen',
+                builder: (context, state) => const Placeholder(),
+              ),
+            ],
+          ),
+        ],
+      ),
+      GoRoute(
+        path: '/sleep_data',
+        name: 'SleepDataScreen',
+        builder: (context, state) => SleepDataScreen(
+          dayDiff: state.extra as int,
+        ),
+      ),
+    ],
+  );
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:health_ring_ai/core/ring_connection/state/bluetooth_connection_bloc/bluetooth_connection_service_bloc.dart';
 import 'package:health_ring_ai/core/ring_connection/state/bluetooth_connection_bloc/bluetooth_connection_service_state.dart';
 import 'package:health_ring_ai/features/onboarding/presentation/onboarding/search_ring.dart';
@@ -93,8 +94,7 @@ class FoundedRingPage extends StatelessWidget {
                               //     );
                               // print('device: $device');
                               // print('device: ');
-                              Navigator.pushNamed(context, '/connect_ring_page',
-                                  arguments: device);
+                              context.push('/connect_ring_page', extra: device);
                             },
                           );
                         },

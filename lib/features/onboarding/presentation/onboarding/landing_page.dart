@@ -2,6 +2,7 @@ import 'dart:ui'; // Required for the blur effect
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:health_ring_ai/core/ring_connection/state/bluetooth_connection_bloc/bluetooth_connection_service_bloc.dart';
 import 'package:health_ring_ai/core/ring_connection/state/bluetooth_connection_bloc/bluetooth_connection_service_event.dart';
 import 'package:health_ring_ai/core/ring_connection/state/bluetooth_connection_bloc/bluetooth_connection_service_state.dart';
@@ -69,7 +70,7 @@ class _LandingPageState extends State<LandingPage> {
                 const Text(
                   "Let's begin by pairing\nyour Smart Ring",
                   textAlign: TextAlign.center,
-                  style: CustomTheme.headingStyle,
+                  style: CustomTheme.headerNormal,
                 ),
                 const SizedBox(height: 60),
 
@@ -95,10 +96,7 @@ class _LandingPageState extends State<LandingPage> {
                                       .add(CheckBluetoothPermissions());
 
                                   if (state is BluetoothEnabled) {
-                                    Navigator.pushNamed(
-                                      context,
-                                      '/onboarding_2',
-                                    );
+                                    context.push("/onboarding_2");
                                   }
                                 },
                           child: Container(

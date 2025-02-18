@@ -1,6 +1,6 @@
 import 'package:health_ring_ai/core/ring_connection/data/models/bluetooth_device.dart';
-import 'package:health_ring_ai/core/ring_connection/data/models/combined_health_data.dart';
-import 'package:health_ring_ai/core/ring_connection/data/models/sleep_data.dart';
+import 'package:health_ring_ai/features/continuous_monitoring/domain/combined_health_data.dart';
+import 'package:health_ring_ai/features/continuous_monitoring/domain/sleep_data.dart';
 
 abstract class BluetoothPlatformInterface {
   /// Check permissions

@@ -1,10 +1,10 @@
 import 'package:flutter/services.dart';
 import 'package:health_ring_ai/core/platform_channels/channel_names.dart';
-import 'package:health_ring_ai/core/ring_connection/data/models/blood_oxygen_data.dart';
 import 'package:health_ring_ai/core/ring_connection/data/models/bluetooth_device.dart';
-import 'package:health_ring_ai/core/ring_connection/data/models/combined_health_data.dart';
-import 'package:health_ring_ai/core/ring_connection/data/models/heart_rate_data.dart';
-import 'package:health_ring_ai/core/ring_connection/data/models/sleep_data.dart';
+import 'package:health_ring_ai/features/continuous_monitoring/domain/blood_oxygen_data.dart';
+import 'package:health_ring_ai/features/continuous_monitoring/domain/combined_health_data.dart';
+import 'package:health_ring_ai/features/continuous_monitoring/domain/heart_rate_data.dart';
+import 'package:health_ring_ai/features/continuous_monitoring/domain/sleep_data.dart';
 
 import '../data/bluetooth_platform_interface.dart';
 

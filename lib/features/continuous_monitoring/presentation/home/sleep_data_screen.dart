@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:health_ring_ai/core/ring_connection/data/models/sleep_data.dart';
 import 'package:health_ring_ai/core/themes/theme_data.dart';
+import 'package:health_ring_ai/features/continuous_monitoring/domain/sleep_data.dart';
 import 'package:health_ring_ai/features/continuous_monitoring/presentation/continuous_monitoring_bloc/bloc/continuous_monitoring_bloc.dart';
 import 'package:health_ring_ai/features/continuous_monitoring/presentation/home/body_metrics_screen.dart';
 import 'package:intl/intl.dart';

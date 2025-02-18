@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:health_ring_ai/core/ring_connection/data/bluetooth_service.dart';
 import 'package:health_ring_ai/core/ring_connection/state/bluetooth_connection_bloc/bluetooth_connection_service_bloc.dart';
 import 'package:health_ring_ai/core/ring_connection/state/bluetooth_connection_bloc/bluetooth_connection_service_event.dart';
@@ -151,7 +152,7 @@ class _SmartRingSearchPageState extends State<SmartRingSearchPage> {
           _hasNavigated = true;
           // Add a delay of 2 seconds before navigation
           Future.delayed(const Duration(seconds: 2), () {
-            Navigator.pushReplacementNamed(context, '/founded_ring_page');
+            context.pushReplacement('/founded_ring_page');
           });
         }
       }
@@ -180,12 +181,12 @@ class _SmartRingSearchPageState extends State<SmartRingSearchPage> {
                     const SizedBox(height: 150),
                     Text(_getStatusText(state),
                         textAlign: TextAlign.center,
-                        style: CustomTheme.headingStyle.copyWith(fontSize: 17)),
+                        style: CustomTheme.headerNormal.copyWith(fontSize: 17)),
                     const SizedBox(height: 10),
-                    Text(
+                    const Text(
                       'Please make sure that Bluetooth is enabled on your\nphone.',
                       textAlign: TextAlign.center,
-                      style: CustomTheme.iosTextSmall,
+                      style: CustomTheme.textSmall,
                     ),
                     const SizedBox(height: 20),
                     // if (state is BluetoothScanning) ...[

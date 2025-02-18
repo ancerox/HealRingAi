@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:health_ring_ai/core/data/preferences.dart';
 import 'package:health_ring_ai/core/themes/theme_data.dart';
 import 'package:health_ring_ai/features/onboarding/presentation/onboarding/connect_ring_page.dart';
@@ -77,11 +78,7 @@ class _FormsScreenState extends State<FormsScreen>
 
     if (currentQuestionIndex == 3 && _weightController.text.isNotEmpty) {
       context.read<PreferencesRepository>().setFirstLaunch(false);
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        '/home',
-        (route) => false,
-      );
+      context.pushReplacement('/home');
     }
   }
 
@@ -550,7 +547,7 @@ class _FormsScreenState extends State<FormsScreen>
                         padding: const EdgeInsets.all(20),
                         child: Text(
                           questions[currentQuestionIndex],
-                          style: CustomTheme.headingStyle,
+                          style: CustomTheme.headerNormal,
                           textAlign: TextAlign.start,
                         ),
                       ),

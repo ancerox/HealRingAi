@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:health_ring_ai/core/app.dart';
+import 'package:go_router/go_router.dart';
 import 'package:health_ring_ai/core/data/preferences.dart';
 import 'package:health_ring_ai/core/ring_connection/state/bluetooth_connection_bloc/bluetooth_connection_service_bloc.dart';
 import 'package:health_ring_ai/core/ring_connection/state/bluetooth_connection_bloc/bluetooth_connection_service_state.dart';
@@ -100,9 +100,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
           }
         },
-        child: MainAppScaffold(
-          showBottomNav: true,
-          child: RefreshIndicator(
+        child: Scaffold(
+          backgroundColor: CustomTheme.black,
+          body: RefreshIndicator(
             onRefresh: _onRefresh,
             color: CustomTheme.primaryDefault,
             backgroundColor: CustomTheme.surfaceSecondary,
@@ -392,12 +392,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                     state.combinedHealthData.heartRateData
                                         .isNotEmpty
                                 ? () {
-                                    Navigator.pushNamed(
-                                      context,
-                                      '/body_metrics',
-                                      arguments: _calculateDayDifference(
-                                          _selectedDate),
-                                    );
+                                    context.pushNamed("BodyMetricsScreen",
+                                        extra: _calculateDayDifference(
+                                            _selectedDate));
                                   }
                                 : null,
                             child: Container(
@@ -450,12 +447,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             onTap: state is HomeDataRecevied &&
                                     state.sleepData.isNotEmpty
                                 ? () {
-                                    Navigator.pushNamed(
-                                      context,
-                                      '/sleep_data',
-                                      arguments: _calculateDayDifference(
-                                          _selectedDate),
-                                    );
+                                    context.push('/sleep_data',
+                                        extra: _calculateDayDifference(
+                                            _selectedDate));
                                   }
                                 : null,
                             child: Container(
