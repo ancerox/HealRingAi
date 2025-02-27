@@ -4,6 +4,15 @@ An advanced wearable device (ring) app built with Flutter that provides real-tim
 
 ---
 
+Before starting, ensure you have the following installed:
+
+- **Flutter SDK:** [Installation Guide]([https://flutter.dev/docs/get-started/install](https://docs.flutter.dev/get-started/install))
+- **Dart SDK:** Required version `^3.5.4`
+- **Git:** For cloning the repository
+- **IDE/Text Editor:** Recommended Visual Studio Code or Android Studio
+
+
+
 ## Table of Contents
 - [Features](#features)
 - [Project Overview](#project-overview)
