@@ -45,7 +45,7 @@ Before starting, ensure you have the following installed:
 ## Project Overview
 
 ### Clean Architecture
-We follow **Clean Architecture** principles to separate concerns:
+I follow **Clean Architecture** principles to separate concerns:
 - **Core / Domain** (business rules, domain entities, and use cases)
 - **Data** (data sources, repositories, remote/local API handling)
 - **Presentation** (UI, state management, routing)
@@ -53,10 +53,10 @@ We follow **Clean Architecture** principles to separate concerns:
 This structure makes the codebase easier to scale, test, and maintain.
 
 ### Platform Channels
-We use **Platform Channels** to integrate native functionalities such as Bluetooth or other OS-specific services with Flutter. The channel method keys are stored in a dedicated file for clarity and to avoid hardcoded strings in the code.
+I use **Platform Channels** to integrate native functionalities such as Bluetooth or other OS-specific services with Flutter. The channel method keys are stored in a dedicated file for clarity and to avoid hardcoded strings in the code.
 
 ### Environment Variables
-We manage environment-specific data (e.g., API keys, server URLs) using the [**flutter_dotenv**](https://pub.dev/packages/flutter_dotenv) package. This allows for separate `.env` files (e.g., `.env.development`, `.env.production`) and keeps sensitive credentials out of the codebase.
+I manage environment-specific data (e.g., API keys, server URLs) using the [**flutter_dotenv**](https://pub.dev/packages/flutter_dotenv) package. This allows for separate `.env` files (e.g., `.env.development`, `.env.production`) and keeps sensitive credentials out of the codebase.
 
 ### Performance Considerations
 - **Efficient State Management**: Using BLoC (or Cubit) with minimal rebuild strategies to keep the UI responsive.
