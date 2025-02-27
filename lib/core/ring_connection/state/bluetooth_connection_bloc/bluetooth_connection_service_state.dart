@@ -118,3 +118,19 @@ final class BluetoothError extends BluetoothState {
   @override
   List<Object?> get props => [message];
 }
+
+class RealTimeHeartRateInitial extends BluetoothState {}
+
+class RealTimeHeartRateStarted extends BluetoothState {}
+
+class RealTimeHeartRateStopped extends BluetoothState {}
+
+class RealTimeHeartRateUpdate extends BluetoothState {
+  final int heartRate;
+  const RealTimeHeartRateUpdate(this.heartRate);
+}
+
+class RealTimeHeartRateError extends BluetoothState {
+  final String message;
+  const RealTimeHeartRateError(this.message);
+}

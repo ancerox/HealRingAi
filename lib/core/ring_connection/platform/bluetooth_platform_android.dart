@@ -157,18 +157,18 @@ class BluetoothPlatformAndroid implements BluetoothPlatformInterface {
   }
 
   @override
-  Future<int> startMeasurement(int type) {
-    // TODO: implement startMeasurement
-    throw UnimplementedError();
-  }
-
-  @override
   // TODO: implement realTimeHeartRate
   Stream<int> get realTimeHeartRate => throw UnimplementedError();
 
   @override
   Future<void> stopMeasurement() {
     // TODO: implement stopMeasurement
+    throw UnimplementedError();
+  }
+
+  @override
+  Stream<Map<String, dynamic>> startMeasurement(int type) {
+    // TODO: implement startMeasurement
     throw UnimplementedError();
   }
 }

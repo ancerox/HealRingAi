@@ -33,4 +33,34 @@ class PreferencesRepository {
 
   Future<void> setUserConnected(bool value) async =>
       await _prefs.setBool('is_user_connected', value);
+
+  Future<String> get userName async => await get<String>('user_name') ?? '';
+  Future<void> setUserName(String value) async =>
+      await _prefs.setString('user_name', value);
+
+  Future<String> get userSex async => await get<String>('user_sex') ?? '';
+  Future<void> setUserSex(String value) async =>
+      await _prefs.setString('user_sex', value);
+
+  Future<String> get userBirthDate async =>
+      await get<String>('user_birth_date') ?? '';
+  Future<void> setUserBirthDate(String value) async =>
+      await _prefs.setString('user_birth_date', value);
+
+  Future<int> get userHeight async => await get<int>('user_height') ?? 0;
+  Future<void> setUserHeight(int value) async =>
+      await _prefs.setInt('user_height', value);
+
+  Future<String> get userWeight async => await get<String>('user_weight') ?? '';
+  Future<void> setUserWeight(String value) async =>
+      await _prefs.setString('user_weight', value);
+
+  Future<bool> get usesMetricSystem async =>
+      await get<bool>('uses_metric_system') ?? false;
+  Future<void> setUsesMetricSystem(bool value) async =>
+      await _prefs.setBool('uses_metric_system', value);
+  Future<int> get userEmojiIndex async =>
+      await get<int>('user_emoji_index') ?? 0;
+  Future<void> setUserEmojiIndex(int value) async =>
+      await _prefs.setInt('user_emoji_index', value);
 }

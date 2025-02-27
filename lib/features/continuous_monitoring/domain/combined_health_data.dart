@@ -41,7 +41,7 @@ class CombinedHealthData extends Equatable {
     return validReadings.reduce((a, b) => a + b) / validReadings.length;
   }
 
-  factory CombinedHealthData.fromJson(Map<String, dynamic> json) {
+  factory CombinedHealthData.fromJson(Map<dynamic, dynamic> json) {
     return CombinedHealthData(
       heartRateData: (json['heartRateData'] as List)
           .map((data) => HeartRateData.fromJson(data))

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:health_ring_ai/core/data/preferences.dart';
 import 'package:health_ring_ai/core/themes/theme_data.dart';
 import 'package:health_ring_ai/features/ai_chat/presentation/widgets/gradiant_boder_box.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
@@ -36,7 +37,7 @@ class _AiChatScreenState extends State<AiChatScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _speech = stt.SpeechToText();
+    // _speech = stt.SpeechToText();
     _textEditingController = TextEditingController();
 
     _startTypewriterAnimation();
@@ -66,16 +67,18 @@ class _AiChatScreenState extends State<AiChatScreen>
   }
 
   void _toggleListening() {
-    print("TEST");
     final currentState = context.read<AiChatBloc>().state;
     context.read<AiChatBloc>().add(ListenSpeach(
-          _speech,
           currentState is AiChatListeningStarted,
         ));
   }
 
-  void _startTypewriterAnimation() {
-    const text = "Hello";
+  void _startTypewriterAnimation() async {
+    final prefs = context.read<PreferencesRepository>();
+
+    final name = await prefs.userName;
+
+    final text = "Hello ${name[0].toUpperCase()}${name.substring(1)}";
     const greeting = "how can I help with your\nhealth today?";
     const duration = Duration(milliseconds: 90);
 
@@ -102,8 +105,6 @@ class _AiChatScreenState extends State<AiChatScreen>
     return BlocListener<AiChatBloc, AiChatState>(
       listenWhen: (previous, current) => previous != current,
       listener: (context, state) {
-        print(state);
-
         if (state is AiChatListeningStarted) {
           context.pushNamed("AiChatSpeechScreen");
         }
@@ -289,7 +290,9 @@ class _AiChatScreenState extends State<AiChatScreen>
                                             message:
                                                 _textEditingController.text);
                                       }
-                                    : _toggleListening,
+                                    : () {
+// _toggleListening
+                                      },
                                 child: GradientBorderBox(
                                   paddingValue: 1,
                                   height: 37,
@@ -358,7 +361,6 @@ Widget _easyQuestion({
 }) {
   return GestureDetector(
     onTap: () {
-      print("Tapped question: $title");
       onTap?.call();
     },
     child: ClipRRect(

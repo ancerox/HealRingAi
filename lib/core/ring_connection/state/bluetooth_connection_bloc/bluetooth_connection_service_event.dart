@@ -60,11 +60,9 @@ final class GetBatteryLevel extends BluetoothEvent {
   const GetBatteryLevel();
 }
 
-// final class GetHeartRateData extends BluetoothEvent {
-//   final List<int> dayIndices;
+class RealTimeHeartRateUpdated extends BluetoothEvent {
+  final int heartRate;
+  const RealTimeHeartRateUpdated(this.heartRate);
+}
 
-//   const GetHeartRateData({required this.dayIndices});
-
-//   @override
-//   List<Object?> get props => [dayIndices];
-// }
+class StopMeasurement extends BluetoothEvent {}

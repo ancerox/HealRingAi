@@ -17,7 +17,6 @@ class BluetoothPlatformIOS implements BluetoothPlatformInterface {
   String? _lastConnectedDeviceId;
   bool _isReconnecting = false;
 
-  // Add this set to track discovered devices
   final Set<String> _discoveredDeviceIds = {};
 
   @override
@@ -61,15 +60,12 @@ class BluetoothPlatformIOS implements BluetoothPlatformInterface {
 
   @override
   Future<void> enableBluetooth() async {
-    // On iOS, we can't programmatically enable Bluetooth
-    // Instead, we should show a dialog asking the user to enable it in settings
     throw Exception('Cannot enable Bluetooth programmatically on iOS');
   }
 
   @override
   Future<void> startScan() async {
     try {
-      // Clear the set when starting a new scan
       _discoveredDeviceIds.clear();
       await _channel.invokeMethod('startScan');
     } on PlatformException catch (e) {
@@ -111,9 +107,7 @@ class BluetoothPlatformIOS implements BluetoothPlatformInterface {
 
   @override
   Stream<ConnectionInfo> get connectionStatus {
-    print("is getting Connmetions");
     return _connectionChannel.receiveBroadcastStream().map((dynamic event) {
-      print(event);
       if (event is Map) {
         final isConnected = event['connected'] as bool? ?? false;
         final state = event['state'] as String? ?? 'disconnected';
@@ -128,11 +122,7 @@ class BluetoothPlatformIOS implements BluetoothPlatformInterface {
               rssi: deviceMap['rssi'] as int? ?? 0,
               manufacturerData: deviceMap['manufacturerData'] as String? ?? '',
             );
-            // print('Received device data: ${deviceMap.toString()}'); // Debug log
-          } catch (e) {
-            print('Error parsing device data: $e'); // Debug log
-            print('Raw device data: ${deviceMap.toString()}'); // Debug log
-          }
+          } catch (e) {}
         }
 
         return ConnectionInfo(
@@ -174,11 +164,8 @@ class BluetoothPlatformIOS implements BluetoothPlatformInterface {
 
     _isReconnecting = true;
     try {
-      print('Attempting to reconnect to device: $_lastConnectedDeviceId');
       await connectToDevice(_lastConnectedDeviceId!);
     } catch (e) {
-      print('Reconnection failed: $e');
-      // Add a delay before the next attempt
       await Future.delayed(const Duration(seconds: 2));
       if (_lastConnectedDeviceId != null) {
         _attemptReconnection(); // Retry
@@ -201,12 +188,10 @@ class BluetoothPlatformIOS implements BluetoothPlatformInterface {
   @override
   Future<CombinedHealthData?> getHealthData(List<int> dayIndices) async {
     try {
-      print('Flutter: Requesting health data for days: $dayIndices');
       final result = await _channel.invokeMethod(
         'getHeartRateHistory',
         {'dayIndices': dayIndices},
       );
-      print('Flutter: Raw health data received: $result');
 
       // Process Heart Rate Data
       final heartRateData = (result['heartRateData'] as List<dynamic>)
@@ -216,14 +201,12 @@ class BluetoothPlatformIOS implements BluetoothPlatformInterface {
               final map = Map<String, dynamic>.from(item as Map);
               return HeartRateData.fromJson(map);
             } catch (e) {
-              print('Flutter: Error processing heart rate item: $e');
               return null;
             }
           })
           .whereType<HeartRateData>()
           .toList();
 
-      // Process Blood Oxygen Data
       final bloodOxygenData = (result['bloodOxygenData'] as List<dynamic>)
           .map((dynamic item) {
             if (item == null) return null;
@@ -231,17 +214,11 @@ class BluetoothPlatformIOS implements BluetoothPlatformInterface {
               final map = Map<String, dynamic>.from(item as Map);
               return BloodOxygenData.fromJson(map);
             } catch (e) {
-              print('Flutter: Error processing blood oxygen item: $e');
               return null;
             }
           })
           .whereType<BloodOxygenData>()
           .toList();
-
-      print(
-          'Flutter: Successfully processed ${heartRateData.length} heart rate records');
-      print(
-          'Flutter: Successfully processed ${bloodOxygenData.length} blood oxygen records');
 
       return CombinedHealthData(
         heartRateData: heartRateData,
@@ -257,12 +234,10 @@ class BluetoothPlatformIOS implements BluetoothPlatformInterface {
   @override
   Future<List<SleepData>> getSleepData(int dayIndex) async {
     try {
-      print('Flutter: Requesting sleep data for day index: $dayIndex');
       final result = await _channel.invokeMethod(
         'getSleepData',
         {'dayIndex': dayIndex},
       );
-      print("flutter SleepData Result $result");
 
       if (result == null) {
         return [];
@@ -275,25 +250,16 @@ class BluetoothPlatformIOS implements BluetoothPlatformInterface {
               final map = Map<String, dynamic>.from(item as Map);
               return SleepData.fromJson(map);
             } catch (e) {
-              print('Flutter: Error processing sleep data item: $e');
               return null;
             }
           })
           .whereType<SleepData>()
           .toList();
 
-      print(
-          'Flutter: Successfully processed ${sleepData.length} sleep records');
       return sleepData;
     } on PlatformException catch (e) {
-      print('Flutter: PlatformException while getting sleep data:');
-      print('  Code: ${e.code}');
-      print('  Message: ${e.message}');
-      print('  Details: ${e.details}');
       throw Exception('Failed to get sleep data: ${e.message}');
     } catch (e, stack) {
-      print('Flutter: Unexpected error while getting sleep data: $e');
-      print('Stack trace: $stack');
       rethrow;
     }
   }
@@ -301,7 +267,6 @@ class BluetoothPlatformIOS implements BluetoothPlatformInterface {
   @override
   Future<bool> reconnectToLastDevice() async {
     try {
-      // Call the native platform to reconnect to the last device
       final isConnected =
           await _channel.invokeMethod<bool>('reconnectToLastDevice');
       return isConnected ?? false;
@@ -311,34 +276,33 @@ class BluetoothPlatformIOS implements BluetoothPlatformInterface {
   }
 
   @override
-  Future<int> startMeasurement(int type) async {
-    try {
-      final Map<dynamic, dynamic> result =
-          await _channel.invokeMethod('startMeasurement', {'type': 0});
-
-      final int heartRate = result['heartRate'];
-      print("$heartRate DATA HEART!!!!!!");
-      // If starting heart rate measurement, listen to the stream
-      return heartRate;
-    } on PlatformException catch (e) {
-      throw Exception('Failed to start measurement: ${e.message}');
-    }
-  }
-
-  @override
-  Stream<int> get realTimeHeartRate {
-    return _heartRateChannel.receiveBroadcastStream().map((dynamic data) {
-      if (data is int) {
-        return data;
+  Stream<Map<String, dynamic>> startMeasurement(int type) {
+    _channel.invokeMethod('startMeasurement', {'type': type});
+    return _heartRateChannel.receiveBroadcastStream().map((dynamic event) {
+      if (event is Map) {
+        return {
+          'dataType': event['dataType'],
+          'value': event['value'],
+          'isError': event['isError'] ?? false,
+          'errorCode': event['errorCode'],
+          'errorMessage': event['errorMessage'],
+        };
       }
-      return 0; // Default value if invalid data
+      return {
+        'isError': true,
+        'errorMessage': 'Invalid data format',
+        'errorCode': -1
+      };
     });
   }
 
   @override
-  Future<void> stopMeasurement() {
-    // TODO: implement stopMeasurement
-    throw UnimplementedError();
+  Future<void> stopMeasurement() async {
+    try {
+      await _channel.invokeMethod('stopMeasurement');
+    } on PlatformException catch (e) {
+      throw Exception('Failed to stop measurement: ${e.message}');
+    }
   }
 }
 

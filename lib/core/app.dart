@@ -5,7 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:health_ring_ai/core/data/preferences.dart';
 import 'package:health_ring_ai/core/themes/theme_data.dart';
-import 'package:health_ring_ai/features/onboarding/presentation/onboarding/landing_page.dart';
+import 'package:health_ring_ai/features/onboarding/presentation/screens/landing_page.dart';
 
 class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
@@ -80,12 +80,6 @@ class MainWrapper extends StatefulWidget {
 class _MainWrapperState extends State<MainWrapper> {
   int _selectedIndex = 0;
 
-  // final List<Widget> _screens = [
-  //   const HomeScreen(),
-  //   const Placeholder(), // Lifespan screen
-  //   const AiChatScreen(), // AI Chat screen
-  //   const Placeholder(), // Profile screen
-  // ];
   void _goToBranch(int index) {
     widget.statefulNavigationShell.goBranch(
       index,

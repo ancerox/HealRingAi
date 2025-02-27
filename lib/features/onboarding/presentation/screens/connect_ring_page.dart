@@ -107,10 +107,6 @@ class _ConnectRingPageState extends State<ConnectRingPage>
                         );
                       },
                     ),
-                    // const SizedBox(height: 5),
-                    // const Text("Silver | Size 8",
-                    //     textAlign: TextAlign.center,
-                    //     style: TextStyle(fontSize: 16, color: Colors.white)),
                   ],
                 ),
                 const SizedBox(height: 40),
@@ -262,7 +258,6 @@ class GradientBackground extends StatelessWidget {
   }
 }
 
-// Add this class for the glow effect
 class GlowingButton extends StatefulWidget {
   final Widget child;
   final VoidCallback? onPressed;

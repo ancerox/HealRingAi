@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:health_ring_ai/core/ring_connection/state/bluetooth_connection_bloc/bluetooth_connection_service_bloc.dart';
 import 'package:health_ring_ai/core/ring_connection/state/bluetooth_connection_bloc/bluetooth_connection_service_state.dart';
-import 'package:health_ring_ai/features/onboarding/presentation/onboarding/search_ring.dart';
+import 'package:health_ring_ai/features/onboarding/presentation/screens/search_ring.dart';
 
 class FoundedRingPage extends StatelessWidget {
   const FoundedRingPage({super.key});
@@ -89,11 +89,6 @@ class FoundedRingPage extends StatelessWidget {
                               color: Colors.white,
                             ),
                             onTap: () {
-                              // context.read<BluetoothBloc>().add(
-                              //       ConnectToDevice(device: device),
-                              //     );
-                              // print('device: $device');
-                              // print('device: ');
                               context.push('/connect_ring_page', extra: device);
                             },
                           );

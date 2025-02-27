@@ -52,9 +52,6 @@ class BluetoothService {
 
   Future<void> disconnectDevice() => _platform.disconnectDevice();
 
-  /// Get connection status stream
-  /// Returns either a bool or a Map with connection details
-
   Stream<dynamic> get connectionStatus => _platform.connectionStatus;
 
   Stream<List<BluetoothDevice>> get discoveredDevices =>
@@ -66,24 +63,42 @@ class BluetoothService {
     final key = 'health_data_${dayIndices.join("_")}';
 
     try {
-      // Check if cached data exists
       final cachedJson = _cache.get(key);
-      if (cachedJson != null) {
-        return CombinedHealthData.fromJson(cachedJson);
+      final cachedData =
+          cachedJson != null ? CombinedHealthData.fromJson(cachedJson) : null;
+
+      if (cachedData == null) {
+        final healthData = await _platform.getHealthData(dayIndices);
+
+        if (healthData != null &&
+            (healthData.bloodOxygenData.isNotEmpty ||
+                healthData.heartRateData.isNotEmpty)) {
+          _cache.put(key, healthData.toJson());
+        }
+        return healthData;
       }
 
-      // If not cached, fetch from platform
+      if (dayIndices.first != 0) return cachedData;
+
       final healthData = await _platform.getHealthData(dayIndices);
 
-      // Store in cache if data is available
       if (healthData != null) {
+        if (healthData.bloodOxygenData.isEmpty &&
+            healthData.heartRateData.isEmpty) {
+          return cachedData;
+        }
+      }
+
+      if (healthData != null &&
+          (healthData.bloodOxygenData.isNotEmpty ||
+              healthData.heartRateData.isNotEmpty)) {
         _cache.put(key, healthData.toJson());
       }
 
       return healthData;
     } catch (e, stacktrace) {
       print('Error fetching health data: $e\n$stacktrace');
-      return null; // Return null to prevent crashes
+      return null;
     }
   }
 
@@ -112,9 +127,8 @@ class BluetoothService {
 
   Future<bool> reconnectToLastDevice() => _platform.reconnectToLastDevice();
 
-  Future<int> startMeasurement(int type) => _platform.startMeasurement(type);
-
-  Stream<int> get realTimeHeartRate => _platform.realTimeHeartRate;
+  Stream<Map<String, dynamic>> startMeasurement(int type) =>
+      _platform.startMeasurement(type);
 
   Future<void> stopMeasurement() => _platform.stopMeasurement();
 }

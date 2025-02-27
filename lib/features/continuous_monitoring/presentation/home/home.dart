@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -83,6 +85,57 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Add this new method to build health metric cards
 
+  // Add this method to calculate the gauge value
+  double _calculateGaugeValue(BluethoothInteractionsState state) {
+    if (state is HomeDataRecevied) {
+      double score = 0;
+      int metricCount = 0;
+
+      // ✅ Improved Heart Rate Calculation
+      if (state.avgHeartRate != null) {
+        final heartRate = state.avgHeartRate!;
+        if (heartRate >= 60 && heartRate <= 100) {
+          score += 100;
+        } else if (heartRate < 60) {
+          score += (heartRate / 60) * 100;
+        } else {
+          score += (200 - heartRate).clamp(0, 100);
+        }
+        metricCount++;
+      }
+
+      // ✅ Improved SpO2 Calculation
+      if (state.avgSpO2 != null) {
+        final spO2 = state.avgSpO2!;
+        if (spO2 >= 95) {
+          score += 100;
+        } else if (spO2 >= 90) {
+          score += (spO2 - 90) * 20;
+        } else {
+          score += (spO2 - 70) * 2.5;
+        }
+        metricCount++;
+      }
+
+      // ✅ Improved Sleep Calculation
+      final sleepMinutes = state.totalSleepMinutes;
+      if (sleepMinutes >= 420 && sleepMinutes <= 540) {
+        score += 100;
+      } else if (sleepMinutes < 420) {
+        score += (sleepMinutes / 420) * 100;
+      } else {
+        score += (540 / sleepMinutes) * 100;
+      }
+      metricCount++;
+
+      // ✅ Final Score Calculation
+      if (metricCount > 0) {
+        return (score / metricCount).clamp(0, 100);
+      }
+    }
+    return 0; // Default if no data
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<BluetoothBloc, BluetoothState>(
@@ -142,6 +195,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   _buildCalendarPicker(),
                   const SizedBox(height: 20),
+                  BlocBuilder<ContinuousMonitoringBloc,
+                      BluethoothInteractionsState>(
+                    buildWhen: (previous, current) {
+                      return current is HomeDataRecevied ||
+                          current is HomeDataLoading ||
+                          current is HomeDataError;
+                    },
+                    builder: (context, state) {
+                      final gaugeValue = _calculateGaugeValue(state);
+                      return SemiCircleGauge(value: gaugeValue);
+                    },
+                  ),
                   // Add Body Metrics section
                   BlocBuilder<ContinuousMonitoringBloc,
                       BluethoothInteractionsState>(
@@ -813,8 +878,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Color _getBatteryColor(int level) {
-    if (level <= 2) return Colors.red;
-    if (level <= 4) return Colors.orange;
+    if (level <= 20) return Colors.red;
+    if (level <= 10) return Colors.orange;
     return Colors.green;
   }
 
@@ -926,4 +991,117 @@ class LoadingShimmerCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class SemiCircleGauge extends StatelessWidget {
+  final double value; // Gauge Value (0 to 100)
+
+  const SemiCircleGauge({super.key, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SizedBox(
+          height: 20,
+        ),
+        Stack(
+          alignment: Alignment.bottomCenter,
+          children: [
+            CustomPaint(
+              size: const Size(200, 100), // Semi-circle size
+              painter: SemiCirclePainter(value),
+            ),
+            Positioned(
+              bottom: 05, // Adjust this value to move numbers closer/farther
+              child: Column(
+                children: [
+                  Text(
+                    value.toInt().toString(),
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    getStatusText(value),
+                    style: const TextStyle(color: Colors.white70, fontSize: 16),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(
+          height: 20,
+        ),
+      ],
+    );
+  }
+
+  // Function to get the status text based on value
+  String getStatusText(double value) {
+    if (value >= 80) return "Good";
+    if (value >= 50) return "Average";
+    return "Poor";
+  }
+}
+
+class SemiCirclePainter extends CustomPainter {
+  final double value; // Value between 0 to 100
+
+  SemiCirclePainter(this.value);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Track paint
+    Paint trackPaint = Paint()
+      ..color = Colors.grey.withOpacity(0.3)
+      ..strokeWidth = 17
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    // Gradient progress paint
+    const gradient = LinearGradient(
+      colors: [
+        CustomTheme.primaryDefault,
+        Colors.white,
+      ],
+      begin: Alignment.centerLeft,
+      end: Alignment.centerRight,
+    );
+
+    Paint progressPaint = Paint()
+      ..shader =
+          gradient.createShader(Rect.fromLTWH(0, 0, size.width, size.height))
+      ..strokeWidth = 20
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    Offset center = Offset(size.width / 2, size.height);
+    double radius = size.width / 2;
+
+    // Draw background track
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      pi, // Start from 180 degrees (left)
+      pi, // Sweep 180 degrees (semi-circle)
+      false,
+      trackPaint,
+    );
+
+    // Draw progress arc (based on value)
+    double progressAngle = (value / 100) * pi;
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      pi, // Start from 180 degrees (left)
+      progressAngle, // Progress angle
+      false,
+      progressPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }

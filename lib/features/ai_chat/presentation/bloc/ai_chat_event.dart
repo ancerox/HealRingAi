@@ -10,16 +10,14 @@ abstract class AiChatEvent extends Equatable {
 /// Start listening
 /// Start listening
 class ListenSpeach extends AiChatEvent {
-  final stt.SpeechToText speech;
   final bool isAlreadyListening;
 
   const ListenSpeach(
-    this.speech,
     this.isAlreadyListening,
   );
 
   @override
-  List<Object?> get props => [speech, isAlreadyListening];
+  List<Object?> get props => [isAlreadyListening];
 }
 
 /// Stop listening

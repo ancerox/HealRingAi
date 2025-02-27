@@ -6,7 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:health_ring_ai/core/themes/theme_data.dart';
 import 'package:health_ring_ai/features/continuous_monitoring/presentation/continuous_monitoring_bloc/bloc/continuous_monitoring_bloc.dart';
-import 'package:health_ring_ai/features/onboarding/presentation/onboarding/connect_ring_page.dart';
+import 'package:health_ring_ai/features/onboarding/presentation/screens/connect_ring_page.dart';
 import 'package:intl/intl.dart';
 
 class BodyMetricsScreen extends StatefulWidget {
@@ -74,7 +74,8 @@ class _BodyMetricsScreenState extends State<BodyMetricsScreen>
               surface: CustomTheme.surfacePrimary,
               onSurface: Colors.white,
             ),
-            dialogBackgroundColor: CustomTheme.surfacePrimary,
+            dialogTheme: const DialogThemeData(
+                backgroundColor: CustomTheme.surfacePrimary),
           ),
           child: child!,
         );
@@ -120,10 +121,6 @@ class _BodyMetricsScreenState extends State<BodyMetricsScreen>
             buildWhen: (previous, current) => current is HeartRateDataReceived,
             builder: (context, state) {
               if (state is HeartRateDataReceived) {
-                // Debug prints for blood oxygen data
-                print(
-                    'Raw blood oxygen data: ${state.combinedHealthData.bloodOxygenData}');
-
                 // Process heart rate data
                 final nonZeroHeartRates = state
                     .combinedHealthData.heartRateData.first.heartRates
@@ -143,9 +140,6 @@ class _BodyMetricsScreenState extends State<BodyMetricsScreen>
                     .combinedHealthData.bloodOxygenData
                     .where((data) => data.bloodOxygenLevels.first > 0)
                     .toList();
-
-                print('Valid SpO2 readings: $validSpO2Readings');
-                print('Number of valid readings: ${validSpO2Readings.length}');
 
                 // Create SpO2 spots based on timestamp and ensure valid values
                 final spO2Spots = validSpO2Readings.map((data) {
@@ -173,8 +167,6 @@ class _BodyMetricsScreenState extends State<BodyMetricsScreen>
                             .map((data) => data.bloodOxygenLevels.first)
                             .reduce((a, b) => a + b) /
                         validSpO2Readings.length;
-
-                print('Calculated average SpO2: $avgSpO2');
 
                 return Center(
                   child: SingleChildScrollView(

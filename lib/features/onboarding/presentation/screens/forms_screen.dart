@@ -1,10 +1,13 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:health_ring_ai/core/data/preferences.dart';
 import 'package:health_ring_ai/core/themes/theme_data.dart';
-import 'package:health_ring_ai/features/onboarding/presentation/onboarding/connect_ring_page.dart';
+import 'package:health_ring_ai/features/onboarding/presentation/screens/connect_ring_page.dart';
+import 'package:health_ring_ai/features/onboarding/presentation/widgets/form_container_widget.dart';
 
 class FormsScreen extends StatefulWidget {
   const FormsScreen({super.key});
@@ -24,6 +27,7 @@ class _FormsScreenState extends State<FormsScreen>
   int? lastPrintedIndex;
 
   final List<String> questions = [
+    'What is your name?',
     'What is your sex?',
     'When were you born?',
     'What is your height?',
@@ -37,6 +41,7 @@ class _FormsScreenState extends State<FormsScreen>
   final TextEditingController _monthController = TextEditingController();
   final TextEditingController _yearController = TextEditingController();
   final TextEditingController _weightController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
 
   String _formatHeight(int value) {
     if (isCentimeters) {
@@ -59,15 +64,6 @@ class _FormsScreenState extends State<FormsScreen>
   void nextQuestion() async {
     FocusScope.of(context).unfocus();
 
-    if (currentQuestionIndex == 1) {
-      // Validate date fields
-      if (_dayController.text.isEmpty ||
-          _monthController.text.isEmpty ||
-          _yearController.text.isEmpty) {
-        return; // Don't proceed if any field is empty
-      }
-    }
-
     if (currentQuestionIndex < questions.length - 1) {
       setState(() {
         currentQuestionIndex++;
@@ -76,19 +72,66 @@ class _FormsScreenState extends State<FormsScreen>
       _progressAnimationControllers[currentQuestionIndex].forward();
     }
 
-    if (currentQuestionIndex == 3 && _weightController.text.isNotEmpty) {
-      context.read<PreferencesRepository>().setFirstLaunch(false);
-      context.pushReplacement('/home');
+    if (currentQuestionIndex == 4 && _weightController.text.isNotEmpty) {
+      final prefs = context.read<PreferencesRepository>();
+
+      // Save all user data to preferences
+      await prefs.setFirstLaunch(false);
+      await prefs.setUserConnected(true);
+
+      // Save individual values
+      await prefs.setUserName(_nameController.text);
+      await prefs.setUserSex(selectedSex ?? '');
+      await prefs.setUserBirthDate(
+          '${_dayController.text}/${_monthController.text}/${_yearController.text}');
+      await prefs.setUserHeight(selectedHeight);
+      await prefs.setUserWeight(_weightController.text);
+      await prefs.setUsesMetricSystem(isCentimeters);
+
+      // Set random emoji index between 1 and 40
+      final random = Random();
+      await prefs.setUserEmojiIndex(random.nextInt(16) + 1);
+
+      context.pushReplacement('/checking_vitals');
     }
   }
 
   Widget _buildQuestionWidget(int index) {
     switch (index) {
       case 0:
+        return TextField(
+          controller: _nameController,
+          keyboardType: TextInputType.name,
+          cursorColor: CustomTheme.primaryDefault,
+          style: const TextStyle(color: Colors.white),
+          onChanged: (value) => setState(() {}),
+          decoration: InputDecoration(
+            labelText: 'Name',
+            labelStyle:
+                const TextStyle(color: Color.fromARGB(255, 110, 110, 110)),
+            filled: true,
+            fillColor: Colors.transparent,
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15),
+              borderSide: const BorderSide(
+                color: Color.fromARGB(255, 62, 62, 62),
+                width: 2,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15),
+              borderSide: const BorderSide(
+                color: Color.fromARGB(255, 126, 126, 126),
+                width: 2,
+              ),
+            ),
+          ),
+        );
+      case 1:
         return Column(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _FormContainer(
+            FormContainer(
               text: 'Female',
               isSelected: selectedSex == 'Female',
               onTap: () {
@@ -98,7 +141,7 @@ class _FormsScreenState extends State<FormsScreen>
               },
             ),
             const SizedBox(height: 20),
-            _FormContainer(
+            FormContainer(
               text: 'Male',
               isSelected: selectedSex == 'Male',
               onTap: () {
@@ -109,7 +152,7 @@ class _FormsScreenState extends State<FormsScreen>
             ),
           ],
         );
-      case 1:
+      case 2:
         return Row(
           children: [
             Expanded(
@@ -200,7 +243,7 @@ class _FormsScreenState extends State<FormsScreen>
             ),
           ],
         );
-      case 2:
+      case 3:
         return Column(
           children: [
             Row(
@@ -330,7 +373,7 @@ class _FormsScreenState extends State<FormsScreen>
             ),
           ],
         );
-      case 3:
+      case 4:
         return Column(
           children: [
             Row(
@@ -440,7 +483,6 @@ class _FormsScreenState extends State<FormsScreen>
   @override
   void initState() {
     super.initState();
-    // Initialize animation controllers for each question
     _progressAnimationControllers = List.generate(
       questions.length,
       (index) => AnimationController(
@@ -449,7 +491,6 @@ class _FormsScreenState extends State<FormsScreen>
       ),
     );
 
-    // Create animations for each progress bar
     _progressAnimations = _progressAnimationControllers.map((controller) {
       return Tween<double>(begin: 0.0, end: 1.0).animate(
         CurvedAnimation(parent: controller, curve: Curves.easeInOut),
@@ -467,6 +508,7 @@ class _FormsScreenState extends State<FormsScreen>
 
   @override
   void dispose() {
+    _nameController.dispose();
     _dayController.dispose();
     _monthController.dispose();
     _yearController.dispose();
@@ -556,7 +598,7 @@ class _FormsScreenState extends State<FormsScreen>
                       // Question-specific widget
                       Padding(
                         padding: EdgeInsets.symmetric(
-                            horizontal: currentQuestionIndex == 2 ? 0 : 20),
+                            horizontal: currentQuestionIndex == 3 ? 0 : 20),
                         child: _buildQuestionWidget(currentQuestionIndex),
                       ),
 
@@ -571,16 +613,19 @@ class _FormsScreenState extends State<FormsScreen>
               Padding(
                 padding: const EdgeInsets.all(20),
                 child: ElevatedButton(
-                  onPressed:
-                      (currentQuestionIndex == 0 && selectedSex == null) ||
-                              (currentQuestionIndex == 1 &&
-                                  (_dayController.text.isEmpty ||
-                                      _monthController.text.isEmpty ||
-                                      _yearController.text.isEmpty)) ||
-                              (currentQuestionIndex == 3 &&
-                                  _weightController.text.isEmpty)
-                          ? null
-                          : nextQuestion,
+                  onPressed: (currentQuestionIndex == 0 &&
+                              _nameController.text.isEmpty) ||
+                          (currentQuestionIndex == 1 && selectedSex == null) ||
+                          (currentQuestionIndex == 2 &&
+                              (_dayController.text.isEmpty ||
+                                  _monthController.text.isEmpty ||
+                                  _yearController.text.isEmpty)) ||
+                          (currentQuestionIndex == 3 &&
+                              selectedHeight == null) ||
+                          (currentQuestionIndex == 4 &&
+                              _weightController.text.isEmpty)
+                      ? null
+                      : nextQuestion,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: CustomTheme.primaryDefault,
                     minimumSize: const Size(double.infinity, 50),
@@ -604,57 +649,6 @@ class _FormsScreenState extends State<FormsScreen>
             ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _FormContainer extends StatelessWidget {
-  final String text;
-  final double? width;
-  final double height;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _FormContainer({
-    required this.text,
-    this.width,
-    this.height = 55,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 20,
-        ),
-        width: width ?? double.infinity,
-        height: height,
-        decoration: BoxDecoration(
-          color: CustomTheme.formBackground,
-          border: Border.all(
-            color: isSelected
-                ? CustomTheme.primaryDefault
-                : CustomTheme.formBorder,
-            width: 2,
-          ),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Align(
-          alignment: Alignment.centerLeft,
-          child: Text(
-            text,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
       ),
     );
   }

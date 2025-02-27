@@ -170,19 +170,3 @@ class MeasurementError extends BluethoothInteractionsState {
   @override
   List<Object> get props => [message]; // Change to List<Object>
 }
-
-class RealTimeHeartRateInitial extends BluethoothInteractionsState {}
-
-class RealTimeHeartRateStarted extends BluethoothInteractionsState {}
-
-class RealTimeHeartRateStopped extends BluethoothInteractionsState {}
-
-class RealTimeHeartRateUpdate extends BluethoothInteractionsState {
-  final int heartRate;
-  const RealTimeHeartRateUpdate(this.heartRate);
-}
-
-class RealTimeHeartRateError extends BluethoothInteractionsState {
-  final String message;
-  const RealTimeHeartRateError(this.message);
-}

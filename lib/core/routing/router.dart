@@ -7,10 +7,12 @@ import 'package:health_ring_ai/features/ai_chat/presentation/ai_chat_speech_scre
 import 'package:health_ring_ai/features/continuous_monitoring/presentation/home/body_metrics_screen.dart';
 import 'package:health_ring_ai/features/continuous_monitoring/presentation/home/home.dart';
 import 'package:health_ring_ai/features/continuous_monitoring/presentation/home/sleep_data_screen.dart';
-import 'package:health_ring_ai/features/onboarding/presentation/onboarding/connect_ring_page.dart';
-import 'package:health_ring_ai/features/onboarding/presentation/onboarding/forms_screen.dart';
-import 'package:health_ring_ai/features/onboarding/presentation/onboarding/founded_ring_page.dart';
-import 'package:health_ring_ai/features/onboarding/presentation/onboarding/search_ring.dart';
+import 'package:health_ring_ai/features/onboarding/presentation/screens/checking_vitrals_screen.dart';
+import 'package:health_ring_ai/features/onboarding/presentation/screens/connect_ring_page.dart';
+import 'package:health_ring_ai/features/onboarding/presentation/screens/forms_screen.dart';
+import 'package:health_ring_ai/features/onboarding/presentation/screens/founded_ring_page.dart';
+import 'package:health_ring_ai/features/onboarding/presentation/screens/search_ring.dart';
+import 'package:health_ring_ai/features/profile/presentation/screens/profile_screen.dart';
 
 class AppRouter {
   AppRouter._();
@@ -48,6 +50,10 @@ class AppRouter {
         name: 'FormsScreen',
         builder: (context, state) => const FormsScreen(),
       ),
+      GoRoute(
+          path: '/checking_vitals',
+          name: 'CheckingVitals',
+          builder: (context, state) => const CheckingVitralsScreen()),
       GoRoute(
         path: '/body_metrics',
         name: 'BodyMetricsScreen',
@@ -105,7 +111,7 @@ class AppRouter {
               GoRoute(
                 path: '/profile',
                 name: 'ProfileScreen',
-                builder: (context, state) => const Placeholder(),
+                builder: (context, state) => const ProfileScreen(),
               ),
             ],
           ),

@@ -17,7 +17,6 @@ class ContinuousMonitoringBloc
   final BluetoothBloc _bluetoothBloc;
   StreamSubscription<int>? _heartRateSubscription;
   Timer? _sameHeartRateTimer;
-  int? _lastHeartRate;
 
   ContinuousMonitoringBloc({
     required BluetoothService bluetoothService,
@@ -29,36 +28,6 @@ class ContinuousMonitoringBloc
     on<GetSleepData>(_onGetSleepData);
     on<GetHomeData>(_onGetHomeData);
     on<GetBatteryLevel>(_onGetBatteryLevel);
-    on<StartMeasurement>(_onStartMeasurement);
-    on<RealTimeHeartRateUpdated>(_onRealTimeHeartRateUpdated);
-
-    _heartRateSubscription = _bluetoothService.realTimeHeartRate.listen((hr) {
-      print("Received heart rate update: $hr");
-      add(RealTimeHeartRateUpdated(hr));
-    }, onError: (error) {
-      print("Heart rate stream error: $error");
-    }, cancelOnError: false);
-    // on<GetBloodOxygenData>(_onGetBloodOxygenData);
-    // on<GetBatteryLevel>(_onGetBatteryLevel);\
-  }
-
-  void _onRealTimeHeartRateUpdated(
-    RealTimeHeartRateUpdated event,
-    Emitter<BluethoothInteractionsState> emit,
-  ) {
-    final currentHR = event.heartRate;
-
-    // Reset timer on every update
-    _sameHeartRateTimer?.cancel();
-    _sameHeartRateTimer = Timer(const Duration(seconds: 3), () {
-      add(StopMeasurement());
-    });
-
-    // Update state only if value changes
-    if (currentHR != _lastHeartRate) {
-      _lastHeartRate = currentHR;
-      emit(RealTimeHeartRateUpdate(currentHR));
-    }
   }
 
   @override
@@ -74,7 +43,7 @@ class ContinuousMonitoringBloc
   ) async {
     if (_bluetoothBloc.state is! BluetoothConnected) {
       emit(const HeartRateError(message: 'Device not connected'));
-      print('Device not connected');
+
       return;
     }
 
@@ -82,10 +51,9 @@ class ContinuousMonitoringBloc
       emit(HeartRateLoading());
       final combinedHealthData =
           await _bluetoothService.getHealthData(event.dayIndices);
-      print('Heart rate data received: $combinedHealthData');
+
       emit(HeartRateDataReceived(combinedHealthData!));
     } catch (e) {
-      print('Error getting heart rate data: $e');
       emit(HeartRateError(message: e.toString()));
     }
   }
@@ -96,17 +64,16 @@ class ContinuousMonitoringBloc
   ) async {
     if (_bluetoothBloc.state is! BluetoothConnected) {
       emit(const HeartRateError(message: 'Device not connected'));
-      print('Device not connected');
+
       return;
     }
 
     try {
       emit(SleepDataLoading());
       final sleepData = await _bluetoothService.getSleepData(event.dayIndex);
-      print('Sleep data received: $sleepData');
+
       emit(SleepDataReceived(sleepData));
     } catch (e) {
-      print('Error getting sleep data: $e');
       emit(SleepDataError(message: e.toString()));
     }
   }
@@ -176,30 +143,9 @@ class ContinuousMonitoringBloc
 
       emit(HomeDataError());
     } catch (e) {
-      print('Error getting home data: $e');
       emit(HeartRateError(message: e.toString()));
     }
   }
-
-  // Future<void> _onGetBloodOxygenData(
-  //   GetBloodOxygenData event,
-  //   Emitter<BluethoothInteractionsState> emit,
-  // ) async {
-  //   if (_bluetoothBloc.state is! BluetoothConnected) {
-  //     emit(const HeartRateError(message: 'Device not connected'));
-  //     return;
-  //   }
-
-  //   try {
-  //     emit(HeartRateLoading());
-  //     final bloodOxygenData =
-  //         await _bluetoothService.getBloodOxygenData(event.dayIndex);
-  //     emit(BloodOxygenDataReceived(bloodOxygenData));
-  //   } catch (e) {
-  //     print('Error getting blood oxygen data: $e');
-  //     emit(HeartRateError(message: e.toString()));
-  //   }
-  // }
 
   Future<void> _onGetBatteryLevel(
     GetBatteryLevel event,
@@ -215,30 +161,7 @@ class ContinuousMonitoringBloc
       final batteryLevel = await _bluetoothService.getBatteryLevel();
       emit(BatteryLevelReceived(batteryLevel));
     } catch (e) {
-      print('Error getting battery level: $e');
       emit(BatteryLevelError(message: e.toString()));
-    }
-  }
-
-  Future<void> _onStartMeasurement(
-    StartMeasurement event,
-    Emitter<BluethoothInteractionsState> emit,
-  ) async {
-    emit(MeasurementStarted());
-    if (_bluetoothBloc.state is! BluetoothConnected) {
-      emit(const MeasurementError('Device not connected'));
-      return;
-    }
-
-    try {
-      final heartBeat = await _bluetoothService.startMeasurement(event.type);
-      emit(MeasurementFinished(heartBeat));
-
-      // Reset tracking variables
-      _lastHeartRate = null;
-      _sameHeartRateTimer?.cancel();
-    } catch (e) {
-      emit(MeasurementError(e.toString()));
     }
   }
 
@@ -247,9 +170,5 @@ class ContinuousMonitoringBloc
       Transition<BluethoothInteractionsEvent, BluethoothInteractionsState>
           transition) {
     super.onTransition(transition);
-    print('Bluetooth Transition:');
-    print('  Current: ${transition.currentState}');
-    print('  Event: ${transition.event}');
-    print('  Next: ${transition.nextState}');
   }
 }

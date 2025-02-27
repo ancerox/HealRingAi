@@ -123,6 +123,8 @@ import QCBandSDK
                 self.handleGetBatteryLevel(result: result)
             case "startMeasurement":
                 self.handleStartMeasuring(call: call, result: result)
+            case "startHeartRateStream":
+                self.handleStartHeartRateStream(result: result)
             default:
                 result(FlutterMethodNotImplemented)
             }
@@ -685,55 +687,109 @@ import QCBandSDK
         )
     }
     
-    private func handleStartMeasuring(call: FlutterMethodCall, result: @escaping FlutterResult) {
-        print("🔍 Starting measurement...")
+   private func handleStartMeasuring(call: FlutterMethodCall, result: @escaping FlutterResult) {
+    // Return immediately so Dart sees that the method was invoked
+    result(["started": true])
+    
+    // 1) Measure Heart Rate
+    QCSDKManager.shareInstance().startToMeasuring(withOperateType: .heartRate) { (hrSuccess, hrResult, hrError) in
         
-        guard let args = call.arguments as? [String: Any],
-              let typeRaw = args["type"] as? Int,
-              let measuringType = QCMeasuringType(rawValue: typeRaw) else {
-            result(FlutterError(
-                code: "INVALID_ARGUMENT", 
-                message: "Invalid measurement type",
-                details: nil
-            ))
-            return
+        // Send heart-rate event
+        if hrSuccess, let hrNumber = hrResult as? NSNumber {
+            let hrEvent = [
+                "dataType": "heartRate",
+                "value": hrNumber.intValue,
+                "isError": false,
+                "errorCode": 0,
+                "errorMessage": ""
+            ] as [String : Any]
+            self.heartRateEventSink?(hrEvent)
+        } else {
+            let hrEvent = [
+                "dataType": "heartRate",
+                "value": 0,
+                "isError": true,
+                "errorCode": (hrError as NSError?)?.code ?? -1,
+                "errorMessage": hrError?.localizedDescription ?? "Heart rate measurement failed"
+            ] as [String : Any]
+            self.heartRateEventSink?(hrEvent)
         }
         
-        // Reset tracking variables
-        lastHeartRate = nil
-        sameHeartRateTimer?.invalidate()
-        
-        QCSDKManager.shareInstance().startToMeasuring(withOperateType: measuringType) { (success, measurementResult, error) in
-            if success {
-                if let hr = measurementResult as? NSNumber {
-                    let heartRate = hr.intValue
-                    print("💓 Heart rate measurement: \(heartRate) bpm")
-                    
-                    // Send the heart rate data
-                    let response: [String: Any] = [
-                        "heartRate": heartRate,
-                        "status": "success"
-                    ]
-                    self.heartRateCallback?(response)
-                    
-                    // Return the heart rate value to Flutter
-                    result(response)
-                }
+        // 2) Then measure Blood Oxygen
+        QCSDKManager.shareInstance().startToMeasuring(withOperateType: .bloodOxygen) { (boSuccess, boResult, boError) in
+            
+            // Send blood-oxygen event
+            if boSuccess, let boNumber = boResult as? NSNumber {
+                let boEvent = [
+                    "dataType": "bloodOxygen",
+                    "value": boNumber.intValue,
+                    "isError": false,
+                    "errorCode": 0,
+                    "errorMessage": ""
+                ] as [String : Any]
+                self.heartRateEventSink?(boEvent)
             } else {
-                let errorResponse: [String: Any] = [
-                    "error": error?.localizedDescription ?? "Measurement failed",
-                    "status": "error"
-                ]
-                self.heartRateCallback?(errorResponse)
-                
-                // Return the error to Flutter
-                result(FlutterError(
-                    code: "MEASUREMENT_FAILED",
-                    message: error?.localizedDescription ?? "Measurement failed",
-                    details: nil
-                ))
+                let boEvent = [
+                    "dataType": "bloodOxygen",
+                    "value": 0,
+                    "isError": true,
+                    "errorCode": (boError as NSError?)?.code ?? -1,
+                    "errorMessage": boError?.localizedDescription ?? "Blood oxygen measurement failed"
+                ] as [String : Any]
+                self.heartRateEventSink?(boEvent)
             }
         }
+    }
+}
+    
+    private func handleStartHeartRateStream(result: @escaping FlutterResult) {
+        // Start heart rate measurement
+        QCSDKManager.shareInstance().startToMeasuring(withOperateType: .heartRate) { (hrSuccess, hrResult, hrError) in
+            let hrEvent: [String: Any]
+            if hrSuccess, let hrNumber = hrResult as? NSNumber {
+                hrEvent = [
+                    "dataType": "heartRate",
+                    "value": hrNumber.intValue,
+                    "isError": false,
+                    "errorCode": 0,
+                    "errorMessage": ""
+                ]
+            } else {
+                hrEvent = [
+                    "dataType": "heartRate",
+                    "value": 0,
+                    "isError": true,
+                    "errorCode": (hrError as? NSError)?.code ?? -1,
+                    "errorMessage": hrError?.localizedDescription ?? "Heart rate measurement failed"
+                ]
+            }
+            self.heartRateEventSink?(hrEvent)
+        }
+        
+        // Start blood oxygen measurement INDEPENDENTLY
+        QCSDKManager.shareInstance().startToMeasuring(withOperateType: .bloodOxygen) { (boSuccess, boResult, boError) in
+            let boEvent: [String: Any]
+            if boSuccess, let boNumber = boResult as? NSNumber {
+                boEvent = [
+                    "dataType": "bloodOxygen",
+                    "value": boNumber.intValue,
+                    "isError": false,
+                    "errorCode": 0,
+                    "errorMessage": ""
+                ]
+            } else {
+                boEvent = [
+                    "dataType": "bloodOxygen",
+                    "value": 0,
+                    "isError": true,
+                    "errorCode": (boError as? NSError)?.code ?? -1,
+                    "errorMessage": boError?.localizedDescription ?? "Blood oxygen measurement failed"
+                ]
+            }
+            self.heartRateEventSink?(boEvent)
+        }
+        
+        result(nil)
     }
     
     // MARK: - CBCentralManagerDelegate
@@ -1008,6 +1064,7 @@ class ConnectionStreamHandler: NSObject, FlutterStreamHandler {
         return nil
     }
 }
+
 
 class StreamHandler: NSObject, FlutterStreamHandler {
     var onListen: ((Any?, @escaping FlutterEventSink) -> FlutterError?)?

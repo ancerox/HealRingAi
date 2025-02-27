@@ -10,7 +10,7 @@ part 'ai_chat_state.dart';
 
 class AiChatBloc extends Bloc<AiChatEvent, AiChatState> {
   Future<dynamic>? _speechFuture;
-  stt.SpeechToText? _speech;
+  final stt.SpeechToText _speech = stt.SpeechToText();
   final GetAiResponseUsecase _getAiResponseUsecase;
 
   AiChatBloc(this._getAiResponseUsecase) : super(AiChatInitial()) {
@@ -42,21 +42,20 @@ class AiChatBloc extends Bloc<AiChatEvent, AiChatState> {
     ListenSpeach event,
     Emitter<AiChatState> emit,
   ) async {
-    _speech = event.speech;
-    final available = await _speech!.initialize();
+    // _speech = event.speech;
+    final available = await _speech.initialize();
     if (available) {
       emit(const AiChatListeningStarted());
-      _speechFuture = _speech!.listen(
+      _speechFuture = _speech.listen(
         onResult: (result) {
           try {
             final recognizedWords = result.recognizedWords;
             add(AiChatSpeechResultReceived(recognizedWords));
-          } catch (e, s) {
-            print('Error emitting AiChatTextUpdated: $e\n$s');
-          }
+          } catch (e, s) {}
         },
         listenFor: const Duration(minutes: 5),
         partialResults: true,
+        listenMode: stt.ListenMode.confirmation,
       );
     }
   }
@@ -66,7 +65,7 @@ class AiChatBloc extends Bloc<AiChatEvent, AiChatState> {
     Emitter<AiChatState> emit,
   ) async {
     await _speechFuture;
-    _speech?.stop();
+    _speech.stop();
     emit(const AiChatListeningStopped());
   }
 

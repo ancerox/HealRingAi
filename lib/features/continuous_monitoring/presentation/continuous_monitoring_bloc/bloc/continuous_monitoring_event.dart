@@ -85,5 +85,3 @@ class RealTimeHeartRateDataReceived extends BluethoothInteractionsEvent {
   final int heartRate;
   const RealTimeHeartRateDataReceived(this.heartRate);
 }
-
-class StopMeasurement extends BluethoothInteractionsEvent {}

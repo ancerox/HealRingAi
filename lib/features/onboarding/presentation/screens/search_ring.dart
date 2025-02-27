@@ -35,13 +35,12 @@ class _RingWaveAnimationState extends State<RingWaveAnimation>
 
     _timer = Timer.periodic(const Duration(milliseconds: 16), (Timer timer) {
       setState(() {
-        // Update each wave radius
         for (int i = 0; i < _waveRadii.length; i++) {
           _waveRadii[i] += 1;
-          // When a wave reaches max radius, reset it to start position and trigger haptic
+
           if (_waveRadii[i] > 200) {
             _waveRadii[i] = 50;
-            // Double fast light haptic feedback
+
             HapticFeedback.lightImpact();
             Future.delayed(const Duration(milliseconds: 100), () {
               HapticFeedback.lightImpact();
@@ -140,14 +139,8 @@ class _SmartRingSearchPageState extends State<SmartRingSearchPage> {
     // Start scanning
     bluetoothBloc.add(StartScanning());
 
-    // Listen to the state changes and navigate when devices are found
     _bluetoothSubscription = bluetoothBloc.stream.listen((state) {
       if (state is BluetoothScanning && !_hasNavigated) {
-        print('Found devices:');
-        for (var device in state.devices) {
-          print(
-              'Device Name: ${device.name ?? "Unknown"}, ID: ${device.id}, RSSI: ${device.rssi}, Manufacturer Data: ${device.manufacturerData}');
-        }
         if (state.devices.isNotEmpty) {
           _hasNavigated = true;
           // Add a delay of 2 seconds before navigation
@@ -189,34 +182,6 @@ class _SmartRingSearchPageState extends State<SmartRingSearchPage> {
                       style: CustomTheme.textSmall,
                     ),
                     const SizedBox(height: 20),
-                    // if (state is BluetoothScanning) ...[
-                    //   // Display found devices
-                    //   Expanded(
-                    //     child: ListView.builder(
-                    //       itemCount: state.devices.length,
-                    //       itemBuilder: (context, index) {
-                    //         final device = state.devices[index];
-                    //         return ListTile(
-                    //           title: Text(
-                    //             device.name ?? 'Unknown Device',
-                    //             style: CustomTheme.iosTextSmall,
-                    //           ),
-                    //           subtitle: Text(
-                    //             device.id,
-                    //             style: CustomTheme.iosTextSmall.copyWith(
-                    //               color: Colors.grey,
-                    //             ),
-                    //           ),
-                    //           onTap: () {
-                    //             context
-                    //                 .read<BluetoothBloc>()
-                    //                 .add(ConnectToDevice(device: device));
-                    //           },
-                    //         );
-                    //       },
-                    //     ),
-                    //   ),
-                    // ],
                     const Spacer(),
                     Stack(
                       alignment: Alignment.center,
@@ -225,9 +190,7 @@ class _SmartRingSearchPageState extends State<SmartRingSearchPage> {
                           left: 50,
                           bottom: 50,
                           child: Transform.rotate(
-                            angle: 179.4 *
-                                3.14159 /
-                                180, // Convert degrees to radians
+                            angle: 179.4 * 3.14159 / 180,
                             child: Container(
                               width: 47.362,
                               height: 18.712,
@@ -242,16 +205,13 @@ class _SmartRingSearchPageState extends State<SmartRingSearchPage> {
                             ),
                           ),
                         ),
-                        // Adding ring glow effect behind the image
                         const Positioned(
                           child: SizedBox(
                             width: 163,
                             height: 163,
-                            child:
-                                RingWaveAnimation(), // Radiating wave animation
+                            child: RingWaveAnimation(),
                           ),
                         ),
-                        // Ring image on top
                         const Image(
                           image: AssetImage('assets/png/ring.png'),
                           width: 85,
@@ -266,13 +226,8 @@ class _SmartRingSearchPageState extends State<SmartRingSearchPage> {
                       child: Column(
                         children: [
                           const SizedBox(height: 40),
-                          // Button to handle connection issues
                           TextButton(
                             onPressed: () {},
-                            // style: TextButton.styleFrom(
-                            //     side: CustomTheme.buttonBorderSide,
-                            //     shape: CustomTheme.buttonShape,
-                            //     minimumSize: const Size(240, 50)),
                             child: Text(
                               'Trouble connecting?',
                               style: CustomTheme.buttonTextStyle.copyWith(

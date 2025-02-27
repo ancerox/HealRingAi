@@ -1,9 +1,10 @@
+import 'package:equatable/equatable.dart';
 import 'package:hive/hive.dart';
 
 part 'heart_rate_data.g.dart';
 
-@HiveType(typeId: 2) // Unique type ID for Hive
-class HeartRateData {
+@HiveType(typeId: 2)
+class HeartRateData extends Equatable {
   @HiveField(0)
   final String date;
 
@@ -19,7 +20,7 @@ class HeartRateData {
   @HiveField(4)
   final String deviceType;
 
-  HeartRateData({
+  const HeartRateData({
     required this.date,
     required this.heartRates,
     required this.secondInterval,
@@ -27,7 +28,7 @@ class HeartRateData {
     required this.deviceType,
   });
 
-  factory HeartRateData.fromJson(Map<String, dynamic> json) {
+  factory HeartRateData.fromJson(Map<dynamic, dynamic> json) {
     return HeartRateData(
       date: json['date'] as String,
       heartRates: (json['heartRates'] as List).cast<int>(),
@@ -49,4 +50,8 @@ class HeartRateData {
   String toString() {
     return 'HeartRateData(date: $date, heartRates: ${heartRates.length} readings, secondInterval: $secondInterval, deviceId: $deviceId, deviceType: $deviceType)';
   }
+
+  @override
+  List<Object?> get props =>
+      [date, heartRates, secondInterval, deviceId, deviceType];
 }

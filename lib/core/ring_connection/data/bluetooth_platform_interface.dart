@@ -49,10 +49,9 @@ abstract class BluetoothPlatformInterface {
   Future<bool> reconnectToLastDevice();
 
   /// Start measurement
-  Future<int> startMeasurement(int type);
+  Stream<Map<String, dynamic>> startMeasurement(int type);
 
   /// Get real-time heart rate
-  Stream<int> get realTimeHeartRate;
 
   Future<void> stopMeasurement();
 }
