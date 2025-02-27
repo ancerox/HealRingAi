@@ -21,12 +21,6 @@ Before starting, ensure you have the following installed:
   - [Environment Variables](#environment-variables)
   - [Performance Considerations](#performance-considerations)
   - [Key Libraries](#key-libraries)
-- [Folder Structure](#folder-structure)
-- [Dependency Injection](#dependency-injection)
-- [Getting Started](#getting-started)
-- [Build & Run](#build--run)
-- [Contributing](#contributing)
-- [License](#license)
 
 ---
 
@@ -59,7 +53,7 @@ I use **Platform Channels** to integrate native functionalities such as Bluetoot
 I manage environment-specific data (e.g., API keys, server URLs) using the [**flutter_dotenv**](https://pub.dev/packages/flutter_dotenv) package. This allows for separate `.env` files (e.g., `.env.development`, `.env.production`) and keeps sensitive credentials out of the codebase.
 
 ### Performance Considerations
-- **Efficient State Management**: Using BLoC (or Cubit) with minimal rebuild strategies to keep the UI responsive.
+- **Efficient State Management**: Using BLoC with minimal rebuild strategies to keep the UI responsive.
 - **Lazy Loading/Singleton Services**: Services (e.g., Bluetooth scanning, AI chat) are singletons to avoid unnecessary resource creation.
 - **Asynchronous Operations**: Networking calls run asynchronously to keep the UI smooth, and background tasks are used where appropriate.
 - **Local Storage**: Relying on fast read/write local storage solutions to reduce disk I/O overhead.
