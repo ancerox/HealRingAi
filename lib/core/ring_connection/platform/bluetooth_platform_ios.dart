@@ -304,6 +304,47 @@ class BluetoothPlatformIOS implements BluetoothPlatformInterface {
       throw Exception('Failed to stop measurement: ${e.message}');
     }
   }
+
+  @override
+  Future<Map<String, dynamic>> getCurrentSteps() async {
+    try {
+      final result = await _channel.invokeMethod('getCurrentSteps');
+      if (result == null) {
+        return {'steps': 0, 'calories': 0, 'distance': 0, 'duration': 0};
+      }
+      return Map<String, dynamic>.from(result);
+    } on PlatformException catch (e) {
+      throw Exception('Failed to get current steps: ${e.message}');
+    } catch (e) {
+      throw Exception('Unexpected error getting steps: $e');
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> getDailySteps(int dayIndex) async {
+    try {
+      final result = await _channel.invokeMethod(
+        'getDailySteps',
+        {'dayIndex': dayIndex},
+      );
+
+      if (result == null) {
+        return {
+          'steps': 0,
+          'calories': 0,
+          'distance': 0,
+          'duration': 0,
+          'date': ''
+        };
+      }
+
+      return Map<String, dynamic>.from(result);
+    } on PlatformException catch (e) {
+      throw Exception('Failed to get daily steps: ${e.message}');
+    } catch (e) {
+      throw Exception('Unexpected error getting daily steps: $e');
+    }
+  }
 }
 
 class ConnectionInfo {

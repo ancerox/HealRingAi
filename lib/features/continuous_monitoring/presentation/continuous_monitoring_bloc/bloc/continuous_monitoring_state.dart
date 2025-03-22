@@ -170,3 +170,12 @@ class MeasurementError extends BluethoothInteractionsState {
   @override
   List<Object> get props => [message]; // Change to List<Object>
 }
+
+class LifeExpectancyCalculated extends BluethoothInteractionsState {
+  final double lifeExpectancy;
+
+  const LifeExpectancyCalculated(this.lifeExpectancy);
+
+  @override
+  List<Object> get props => [lifeExpectancy];
+}

@@ -57,6 +57,7 @@ class MyApp extends StatelessWidget {
             ),
           ),
           BlocProvider<ContinuousMonitoringBloc>(
+            lazy: true,
             create: (context) => ContinuousMonitoringBloc(
               bluetoothBloc: context.read<BluetoothBloc>(),
               bluetoothService: context.read<BluetoothService>(),

@@ -28,6 +28,7 @@ class ContinuousMonitoringBloc
     on<GetSleepData>(_onGetSleepData);
     on<GetHomeData>(_onGetHomeData);
     on<GetBatteryLevel>(_onGetBatteryLevel);
+    on<CalculateLifeExpectancy>(_onCalculateLifeExpectancy);
   }
 
   @override
@@ -35,6 +36,61 @@ class ContinuousMonitoringBloc
     _heartRateSubscription?.cancel();
     _sameHeartRateTimer?.cancel();
     return super.close();
+  }
+
+  Future<void> _onCalculateLifeExpectancy(
+    CalculateLifeExpectancy event,
+    Emitter<BluethoothInteractionsState> emit,
+  ) async {
+    if (state is! HomeDataRecevied) {
+      return;
+    }
+
+    final homeData = state as HomeDataRecevied;
+
+    double baseLifeExpectancy = 78.0; // Base life expectancy
+    double adjustedLifeExpectancy = baseLifeExpectancy;
+
+    // 1. Heart Rate Impact (20% weight)
+    if (homeData.avgHeartRate != null) {
+      final heartRate = homeData.avgHeartRate!;
+      if (heartRate >= 60 && heartRate <= 80) {
+        adjustedLifeExpectancy += 2.0; // Optimal range
+      } else if (heartRate > 80 && heartRate <= 100) {
+        adjustedLifeExpectancy -= 1.0; // Slightly elevated
+      } else if (heartRate > 100) {
+        adjustedLifeExpectancy -= 2.0; // High risk
+      }
+    }
+
+    // 2. Sleep Quality Impact (25% weight)
+    final sleepHours = homeData.totalSleepMinutes / 60.0;
+    if (sleepHours >= 7 && sleepHours <= 9) {
+      adjustedLifeExpectancy += 2.5; // Optimal sleep
+    } else if (sleepHours >= 6 && sleepHours < 7) {
+      adjustedLifeExpectancy -= 1.0; // Slightly insufficient
+    } else if (sleepHours < 6) {
+      adjustedLifeExpectancy -= 2.5; // Severe sleep deprivation
+    }
+
+    // 3. Blood Oxygen Impact (10% weight)
+    if (homeData.avgSpO2 != null) {
+      final spO2 = homeData.avgSpO2!;
+      if (spO2 >= 95) {
+        adjustedLifeExpectancy += 1.0; // Optimal oxygen
+      } else if (spO2 >= 90 && spO2 < 95) {
+        adjustedLifeExpectancy -= 0.5; // Slightly low
+      } else {
+        adjustedLifeExpectancy -= 1.0; // Low oxygen
+      }
+    }
+
+    // Calculate progress percentage for the radial indicator
+    double progress = (adjustedLifeExpectancy / 100.0).clamp(0.0, 1.0);
+
+    // return adjustedLifeExpectancy;
+
+    emit(LifeExpectancyCalculated(progress));
   }
 
   Future<void> _onGetHeartRateData(

@@ -608,6 +608,14 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // Row _stepCountWidget() {
+  //   return Row(
+  //     children: [
+  //       Text('Step Count: ${state.stepCount}'),
+  //     ],
+  //   );
+  // }
+
   Positioned _healthTitle() {
     return Positioned(
       top: 60,
@@ -1000,41 +1008,47 @@ class SemiCircleGauge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
+    return Stack(
       children: [
-        const SizedBox(
-          height: 20,
-        ),
-        Stack(
-          alignment: Alignment.bottomCenter,
+        Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            CustomPaint(
-              size: const Size(200, 100), // Semi-circle size
-              painter: SemiCirclePainter(value),
+            const SizedBox(
+              height: 20,
             ),
-            Positioned(
-              bottom: 05, // Adjust this value to move numbers closer/farther
-              child: Column(
-                children: [
-                  Text(
-                    value.toInt().toString(),
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold),
+            Stack(
+              alignment: Alignment.bottomCenter,
+              children: [
+                CustomPaint(
+                  size: const Size(200, 100), // Semi-circle size
+                  painter: SemiCirclePainter(value),
+                ),
+                Positioned(
+                  bottom:
+                      05, // Adjust this value to move numbers closer/farther
+                  child: Column(
+                    children: [
+                      Text(
+                        value.toInt().toString(),
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        getStatusText(value),
+                        style: const TextStyle(
+                            color: Colors.white70, fontSize: 16),
+                      ),
+                    ],
                   ),
-                  Text(
-                    getStatusText(value),
-                    style: const TextStyle(color: Colors.white70, fontSize: 16),
-                  ),
-                ],
-              ),
+                ),
+              ],
+            ),
+            const SizedBox(
+              height: 20,
             ),
           ],
-        ),
-        const SizedBox(
-          height: 20,
         ),
       ],
     );
@@ -1058,7 +1072,7 @@ class SemiCirclePainter extends CustomPainter {
     // Track paint
     Paint trackPaint = Paint()
       ..color = Colors.grey.withOpacity(0.3)
-      ..strokeWidth = 17
+      ..strokeWidth = 20 // Increased stroke width for a bigger circle
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
@@ -1075,12 +1089,13 @@ class SemiCirclePainter extends CustomPainter {
     Paint progressPaint = Paint()
       ..shader =
           gradient.createShader(Rect.fromLTWH(0, 0, size.width, size.height))
-      ..strokeWidth = 20
+      ..strokeWidth = 23 // Increased stroke width for a bigger circle
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
-    Offset center = Offset(size.width / 2, size.height);
-    double radius = size.width / 2;
+    Offset center = Offset(size.width / 2,
+        size.height + 10); // Adjusted center for a bigger circle
+    double radius = size.width / 2 + 20; // Increased radius for a bigger circle
 
     // Draw background track
     canvas.drawArc(

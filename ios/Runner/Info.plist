@@ -34,10 +34,10 @@
 	<string>Need location permission for BLE scanning</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Need location permission for BLE scanning</string>
-	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>We need your permission to use speech recognition.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>We need your permission to access the microphone.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>We need your permission to use speech recognition.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

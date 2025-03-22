@@ -62,16 +62,9 @@ class StartMeasurement extends BluethoothInteractionsEvent {
   const StartMeasurement(this.type);
 
   @override
-  List<Object> get props => [type]; // Change to List<Object>
+  List<Object> get props => [type];
 }
 
-// class RealTimeHeartRateDataReceived extends BluethoothInteractionsEvent {
-//   final int heartRate;
-//   const RealTimeHeartRateDataReceived(this.heartRate);
-
-//   @override
-//   List<Object> get props => [heartRate];
-// }
 class RealTimeHeartRateUpdated extends BluethoothInteractionsEvent {
   final int heartRate;
   const RealTimeHeartRateUpdated(this.heartRate);
@@ -85,3 +78,5 @@ class RealTimeHeartRateDataReceived extends BluethoothInteractionsEvent {
   final int heartRate;
   const RealTimeHeartRateDataReceived(this.heartRate);
 }
+
+class CalculateLifeExpectancy extends BluethoothInteractionsEvent {}

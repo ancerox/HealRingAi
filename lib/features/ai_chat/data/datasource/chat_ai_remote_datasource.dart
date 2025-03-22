@@ -20,7 +20,7 @@ class ChatAiRemoteDatasource {
   ChatAiRemoteDatasource(this._dio, this._prefs);
 
   Future<AiChatResponse> getAiMessage(String message) async {
-    final apiKey = dotenv.env['key'];
+    final apiKey = dotenv.env['chat_api_key'];
 
     final List<Map<String, dynamic>> summarizedDailyData = [];
 

@@ -78,6 +78,7 @@ class BluetoothService {
         return healthData;
       }
 
+      // If the first day is not today, return the cached data
       if (dayIndices.first != 0) return cachedData;
 
       final healthData = await _platform.getHealthData(dayIndices);
@@ -103,20 +104,23 @@ class BluetoothService {
   }
 
   Future<List<SleepData>> getSleepData(int dayIndex) async {
-    final key = 'sleep_data_$dayIndex';
+    final date = DateTime.now().subtract(Duration(days: dayIndex));
+    final key = 'sleep_data_${date.year}_${date.month}_${date.day}';
 
     try {
       // Check if cached data exists
       final cachedData = _cache.get(key);
-      if (cachedData != null) {
+      if (cachedData != null && dayIndex != 0) {
         return List<SleepData>.from(cachedData);
       }
 
       // Fetch from platform
       final sleepData = await _platform.getSleepData(dayIndex);
 
-      // Store in cache
-      _cache.put(key, sleepData);
+      // Store in cache only if data is not empty
+      if (sleepData.isNotEmpty) {
+        _cache.put(key, sleepData);
+      }
 
       return sleepData;
     } catch (e, stacktrace) {

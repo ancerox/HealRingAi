@@ -6,6 +6,7 @@ import 'package:health_ring_ai/features/ai_chat/presentation/ai_chat_screen.dart
 import 'package:health_ring_ai/features/ai_chat/presentation/ai_chat_speech_screen.dart';
 import 'package:health_ring_ai/features/continuous_monitoring/presentation/home/body_metrics_screen.dart';
 import 'package:health_ring_ai/features/continuous_monitoring/presentation/home/home.dart';
+import 'package:health_ring_ai/features/continuous_monitoring/presentation/home/lifespan/life_span_screen.dart';
 import 'package:health_ring_ai/features/continuous_monitoring/presentation/home/sleep_data_screen.dart';
 import 'package:health_ring_ai/features/onboarding/presentation/screens/checking_vitrals_screen.dart';
 import 'package:health_ring_ai/features/onboarding/presentation/screens/connect_ring_page.dart';
@@ -88,7 +89,7 @@ class AppRouter {
               GoRoute(
                 path: '/lifespan',
                 name: 'LifespanScreen',
-                builder: (context, state) => const Placeholder(),
+                builder: (context, state) => const LifeSpanScreen(),
               ),
             ],
           ),

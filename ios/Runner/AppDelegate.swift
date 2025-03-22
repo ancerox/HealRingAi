@@ -125,6 +125,10 @@ import QCBandSDK
                 self.handleStartMeasuring(call: call, result: result)
             case "startHeartRateStream":
                 self.handleStartHeartRateStream(result: result)
+            case "getCurrentSteps":
+                self.handleGetCurrentSteps(result: result)
+            case "getDailySteps":
+                self.handleGetDailySteps(call: call, result: result)
             default:
                 result(FlutterMethodNotImplemented)
             }
@@ -790,6 +794,162 @@ import QCBandSDK
         }
         
         result(nil)
+    }
+    
+    // Add these new handler methods
+
+    private func handleGetCurrentSteps(result: @escaping FlutterResult) {
+        guard isDeviceReadyForRequests() else {
+            result(FlutterError(
+                code: "DEVICE_NOT_READY",
+                message: "Device is not ready for requests",
+                details: nil
+            ))
+            return
+        }
+        
+        QCSDKCmdCreator.getCurrentSportSucess({ sportModel in
+            // Print the model to see available properties
+            print("Sport model: \(sportModel)")
+            
+            // Attempt to read values using Mirror to inspect the properties
+            var stepsData: [String: Any] = [:]
+            
+            // Use Mirror to find property names
+            let mirror = Mirror(reflecting: sportModel)
+            for child in mirror.children {
+                print("Property: \(child.label ?? "unknown") = \(child.value)")
+            }
+            
+            // Set default values
+            stepsData = [
+                "steps": 0,
+                "calories": 0,
+                "distance": 0,
+                "duration": 0
+            ]
+            
+            // Try to access potential property names for steps
+            if let value = sportModel.value(forKey: "step") as? Int {
+                stepsData["steps"] = value
+            } else if let value = sportModel.value(forKey: "steps") as? Int {
+                stepsData["steps"] = value
+            } else if let value = sportModel.value(forKey: "stepCount") as? Int {
+                stepsData["steps"] = value
+            }
+            
+            // Try to access potential property names for calories
+            if let value = sportModel.value(forKey: "calorie") as? Int {
+                stepsData["calories"] = value
+            } else if let value = sportModel.value(forKey: "calories") as? Int {
+                stepsData["calories"] = value
+            } else if let value = sportModel.value(forKey: "calorieCount") as? Int {
+                stepsData["calories"] = value
+            }
+            
+            // Try to access potential property names for distance
+            if let value = sportModel.value(forKey: "distance") as? Int {
+                stepsData["distance"] = value
+            }
+            
+            // Try to access potential property names for duration
+            if let value = sportModel.value(forKey: "duration") as? Int {
+                stepsData["duration"] = value
+            } else if let value = sportModel.value(forKey: "sportTime") as? Int {
+                stepsData["duration"] = value
+            } else if let value = sportModel.value(forKey: "time") as? Int {
+                stepsData["duration"] = value
+            }
+            
+            result(stepsData)
+        }, failed: {
+            result(FlutterError(
+                code: "STEPS_READ_FAILED",
+                message: "Failed to read current steps",
+                details: nil
+            ))
+        })
+    }
+
+    private func handleGetDailySteps(call: FlutterMethodCall, result: @escaping FlutterResult) {
+        guard let args = call.arguments as? [String: Any],
+              let dayIndex = args["dayIndex"] as? Int else {
+            result(FlutterError(
+                code: "INVALID_ARGUMENT",
+                message: "Invalid day index",
+                details: nil
+            ))
+            return
+        }
+        
+        guard isDeviceReadyForRequests() else {
+            result(FlutterError(
+                code: "DEVICE_NOT_READY",
+                message: "Device is not ready for requests",
+                details: nil
+            ))
+            return
+        }
+        
+        QCSDKCmdCreator.getOneDaySport(by: dayIndex, success: { sportModel in
+            // Print the model to see available properties
+            print("Daily sport model: \(sportModel)")
+            
+            // Default values
+            var stepsData: [String: Any] = [
+                "steps": 0,
+                "calories": 0,
+                "distance": 0,
+                "duration": 0,
+                "date": sportModel.value(forKey: "date") as? String ?? ""
+            ]
+            
+            // Use Mirror to find property names
+            let mirror = Mirror(reflecting: sportModel)
+            for child in mirror.children {
+                print("Property: \(child.label ?? "unknown") = \(child.value)")
+            }
+            
+            // Try to access potential property names for steps
+            if let value = sportModel.value(forKey: "step") as? Int {
+                stepsData["steps"] = value
+            } else if let value = sportModel.value(forKey: "steps") as? Int {
+                stepsData["steps"] = value
+            } else if let value = sportModel.value(forKey: "stepCount") as? Int {
+                stepsData["steps"] = value
+            }
+            
+            // Try to access potential property names for calories
+            if let value = sportModel.value(forKey: "calorie") as? Int {
+                stepsData["calories"] = value
+            } else if let value = sportModel.value(forKey: "calories") as? Int {
+                stepsData["calories"] = value
+            } else if let value = sportModel.value(forKey: "calorieCount") as? Int {
+                stepsData["calories"] = value
+            }
+            
+            // Try to access potential property names for distance
+            if let value = sportModel.value(forKey: "distance") as? Int {
+                stepsData["distance"] = value
+            }
+            
+            // Try to access potential property names for duration
+            if let value = sportModel.value(forKey: "duration") as? Int {
+                stepsData["duration"] = value
+            } else if let value = sportModel.value(forKey: "sportTime") as? Int {
+                stepsData["duration"] = value
+            } else if let value = sportModel.value(forKey: "time") as? Int {
+                stepsData["duration"] = value
+            }
+            
+            result(stepsData)
+        }, fail: {
+            result(FlutterError(
+                code: "STEPS_READ_FAILED",
+                message: "Failed to read steps for day \(dayIndex)",
+                details: nil
+            ))
+        })
     }
     
     // MARK: - CBCentralManagerDelegate
